@@ -1,0 +1,41 @@
+/**
+ * Single source of truth for product branding.
+ *
+ * Downstream forks (HR, Finance, etc.) should only need to edit THIS file to
+ * rebrand the app. Nothing else in the codebase should hardcode a product
+ * name, tagline, or color — grep for them before adding new UI copy.
+ */
+export const appConfig = {
+  productName: 'App Pack',
+  tagline: 'A starter you can actually ship.',
+  logo: {
+    // Path relative to /public. Swap the file and keep the same path, or
+    // change the path here.
+    src: '/logo.svg',
+    alt: 'App Pack logo',
+  },
+  colors: {
+    // HSL channel triples (no `hsl()` wrapper) so they can be interpolated
+    // directly into CSS custom properties for both light and dark themes.
+    light: {
+      primary: '222 89% 55%',
+      primaryForeground: '0 0% 100%',
+    },
+    dark: {
+      primary: '222 89% 65%',
+      primaryForeground: '222 47% 11%',
+    },
+  },
+  nav: {
+    primary: [
+      { label: 'Dashboard', to: '/' as const },
+      { label: 'Records', to: '/records' as const },
+    ],
+    admin: [
+      { label: 'Audit log', to: '/admin/audit' as const },
+      { label: 'Usage events', to: '/admin/events' as const },
+    ],
+  },
+} as const
+
+export type AppConfig = typeof appConfig
