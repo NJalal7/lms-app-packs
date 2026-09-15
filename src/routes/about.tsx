@@ -3,9 +3,17 @@ import { createFileRoute } from '@tanstack/react-router'
 import { Database, Fingerprint, Rocket, ShieldCheck, type LucideIcon } from 'lucide-react'
 import { appConfig } from '@/config/app'
 import { useAppContext } from '@/server/context'
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
-import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+  Badge,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@netlify-labs/app-pack-ui'
 
 export const Route = createFileRoute('/about')({
   component: AboutPage,

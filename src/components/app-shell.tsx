@@ -5,9 +5,7 @@ import { appConfig } from '@/config/app'
 import { useAppContext } from '@/server/context'
 import { ModeToggle } from '@/components/mode-toggle'
 import { LogoutButton } from '@/auth/client'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
+import { Badge, Button, Card, CardContent } from '@netlify-labs/app-pack-ui'
 import { cn } from '@/lib/utils'
 
 /**

@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { toast } from 'sonner'
+import { toast, Card, CardContent, CardHeader, CardTitle, Button } from '@netlify-labs/app-pack-ui'
 import { Trash2 } from 'lucide-react'
 import {
   getRecordServer,
@@ -10,10 +10,8 @@ import {
 } from '@/server/records'
 import { useAppForm } from '@/components/forms/use-app-form'
 import { useSubmission } from '@/lib/submission'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { FieldGroup } from '@/components/ui/field'
 import { SubmitButton } from '@/components/forms/submit-button'
-import { Button } from '@/components/ui/button'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -57,7 +55,7 @@ function RecordDetailPage() {
     validators: { onSubmit: recordInputSchema },
     onSubmit: async ({ value }) => {
       await runSave({ data: { id, ...value } })
-      toast.success('Record updated')
+      toast({ title: 'Record updated' })
     },
   })
 
@@ -87,7 +85,7 @@ function RecordDetailPage() {
                 disabled={deleteState.status === 'submitting'}
                 onClick={async () => {
                   await runDelete({ data: { id } })
-                  toast.success('Record deleted')
+                  toast({ title: 'Record deleted' })
                   navigate({ to: '/records' })
                 }}
               >

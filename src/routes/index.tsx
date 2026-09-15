@@ -2,10 +2,18 @@ import { createFileRoute, Link } from '@tanstack/react-router'
 import { FileText, Clock, DollarSign } from 'lucide-react'
 import { listRecordsServer } from '@/server/records'
 import { useAppContext } from '@/server/context'
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  Badge,
+  Button,
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from '@netlify-labs/app-pack-ui'
 import { LoadingState } from '@/components/states/loading-state'
 import { ErrorState } from '@/components/states/error-state'
 

@@ -1,6 +1,6 @@
 import { ArrowDown, ArrowUp, ChevronsUpDown } from 'lucide-react'
 import type { Column, RowData } from '@tanstack/react-table'
-import { Button } from '@/components/ui/button'
+import { Button } from '@netlify-labs/app-pack-ui'
 import { cn } from '@/lib/utils'
 import { dataTableFeatures } from '@/components/data-table/features'
 

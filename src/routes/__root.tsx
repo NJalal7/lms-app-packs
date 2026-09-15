@@ -1,7 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { createRootRoute, HeadContent, Outlet, Scripts, useRouter } from '@tanstack/react-router'
-import { ThemeProvider } from 'next-themes'
-import { Toaster } from '@/components/ui/sonner'
+import { ThemeProvider, Toaster } from '@netlify-labs/app-pack-ui'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { BrandTheme } from '@/components/brand-theme'
 import { AppShell } from '@/components/app-shell'
@@ -9,6 +8,7 @@ import { appConfig } from '@/config/app'
 import { getAppContext, type AppContext } from '@/server/context'
 import { useAuthCallback } from '@/auth/client'
 import { trackEvent } from '@/lib/track-event'
+import appPackUiCss from '@netlify-labs/app-pack-ui/styles.css?url'
 import appCss from '@/styles.css?url'
 
 export const Route = createRootRoute({
@@ -22,7 +22,10 @@ export const Route = createRootRoute({
       { title: appConfig.productName },
       { name: 'description', content: appConfig.tagline },
     ],
-    links: [{ rel: 'stylesheet', href: appCss }],
+    links: [
+      { rel: 'stylesheet', href: appPackUiCss },
+      { rel: 'stylesheet', href: appCss },
+    ],
   }),
   component: RootComponent,
 })
@@ -35,7 +38,7 @@ function RootComponent() {
         <BrandTheme />
       </head>
       <body>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+        <ThemeProvider attribute="class" defaultTheme="system">
           <TooltipProvider>
             <RootShell />
           </TooltipProvider>
