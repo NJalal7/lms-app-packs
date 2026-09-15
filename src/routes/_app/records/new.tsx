@@ -1,9 +1,8 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { toast } from 'sonner'
+import { toast, Card, CardContent, CardHeader, CardTitle } from '@netlify-labs/app-pack-ui'
 import { createRecordServer, recordInputSchema, recordStatusValues } from '@/server/records'
 import { useAppForm } from '@/components/forms/use-app-form'
 import { useSubmission } from '@/lib/submission'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { FieldGroup } from '@/components/ui/field'
 import { SubmitButton } from '@/components/forms/submit-button'
 
@@ -27,7 +26,7 @@ function NewRecordPage() {
     validators: { onSubmit: recordInputSchema },
     onSubmit: async ({ value }) => {
       const record = await run({ data: value })
-      toast.success('Record created')
+      toast({ title: 'Record created' })
       navigate({ to: '/records/$id', params: { id: record.id } })
     },
   })

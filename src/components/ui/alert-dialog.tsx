@@ -2,7 +2,7 @@ import * as React from 'react'
 import { AlertDialog as AlertDialogPrimitive } from 'radix-ui'
 
 import { cn } from '@/lib/utils'
-import { Button } from '@/components/ui/button'
+import { Button } from '@netlify-labs/app-pack-ui'
 
 function AlertDialog({ ...props }: React.ComponentProps<typeof AlertDialogPrimitive.Root>) {
   return <AlertDialogPrimitive.Root data-slot="alert-dialog" {...props} />
@@ -125,8 +125,8 @@ function AlertDialogDescription({
 
 function AlertDialogAction({
   className,
-  variant = 'default',
-  size = 'default',
+  variant = 'primary',
+  size = 'sm',
   ...props
 }: React.ComponentProps<typeof AlertDialogPrimitive.Action> &
   Pick<React.ComponentProps<typeof Button>, 'variant' | 'size'>) {
@@ -140,7 +140,7 @@ function AlertDialogAction({
 function AlertDialogCancel({
   className,
   variant = 'outline',
-  size = 'default',
+  size = 'sm',
   ...props
 }: React.ComponentProps<typeof AlertDialogPrimitive.Cancel> &
   Pick<React.ComponentProps<typeof Button>, 'variant' | 'size'>) {

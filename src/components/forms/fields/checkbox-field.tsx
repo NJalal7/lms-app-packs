@@ -1,6 +1,6 @@
 import { useFieldContext } from '@/components/forms/form-context'
 import { Field, FieldLabel, FieldError } from '@/components/ui/field'
-import { Checkbox } from '@/components/ui/checkbox'
+import { Checkbox } from '@netlify-labs/app-pack-ui'
 
 export function CheckboxField({ label }: { label: string }) {
   const field = useFieldContext<boolean>()

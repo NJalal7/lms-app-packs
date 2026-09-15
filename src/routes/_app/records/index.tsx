@@ -4,9 +4,7 @@ import { listRecordsServer, recordStatusValues } from '@/server/records'
 import type { RecordRow } from '@/db/schema'
 import { DataTable, type DataTableColumn } from '@/components/data-table/data-table'
 import { DataTableColumnHeader } from '@/components/data-table/column-header'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { EmptyState } from '@/components/states/empty-state'
+import { Button, Badge, EmptyState } from '@netlify-labs/app-pack-ui'
 import { LoadingState } from '@/components/states/loading-state'
 import { ErrorState } from '@/components/states/error-state'
 
@@ -95,7 +93,7 @@ function RecordsPage() {
         ]}
         emptyState={
           <EmptyState
-            icon={Inbox}
+            icon={<Inbox />}
             title="No records"
             description="Create your first record to get started."
             action={

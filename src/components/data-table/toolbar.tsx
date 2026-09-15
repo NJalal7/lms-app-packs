@@ -1,8 +1,7 @@
 import { X } from 'lucide-react'
 import type { ReactTable, RowData } from '@tanstack/react-table'
 import { dataTableFeatures } from '@/components/data-table/features'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
+import { Input, Button } from '@netlify-labs/app-pack-ui'
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -35,7 +34,8 @@ export function DataTableToolbar<TData extends RowData>({
         placeholder={searchPlaceholder}
         value={globalFilter ?? ''}
         onChange={(e) => table.setGlobalFilter(e.target.value)}
-        className="h-8 w-full max-w-sm"
+        size="sm"
+        wrapperClassName="w-full max-w-sm"
       />
 
       {filterableColumns.map((filter) => {

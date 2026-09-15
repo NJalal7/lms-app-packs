@@ -9,8 +9,7 @@ import {
   type AuthProvider,
   type Settings,
 } from '@netlify/identity'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { Button, Input } from '@netlify-labs/app-pack-ui'
 import { Field, FieldLabel, FieldError, FieldGroup, FieldDescription } from '@/components/ui/field'
 import { Separator } from '@/components/ui/separator'
 import { useSubmission } from '@/lib/submission'

@@ -1,7 +1,6 @@
 import { AlertTriangle } from 'lucide-react'
 import type { ErrorComponentProps } from '@tanstack/react-router'
-import { Button } from '@/components/ui/button'
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { Button, Alert, AlertDescription, AlertTitle } from '@netlify-labs/app-pack-ui'
 
 export function ErrorState({
   title = 'Something went wrong',
