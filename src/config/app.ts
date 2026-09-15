@@ -30,6 +30,7 @@ export const appConfig = {
     primary: [
       { label: 'Dashboard', to: '/' as const },
       { label: 'Records', to: '/records' as const },
+      { label: 'About', to: '/about' as const },
     ],
     admin: [
       { label: 'Audit log', to: '/admin/audit' as const },
