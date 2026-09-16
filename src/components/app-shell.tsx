@@ -52,7 +52,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <div className="ml-auto flex items-center gap-3">
             {demoMode ? (
               <Badge variant="secondary" className="hidden sm:inline-flex">
-                Demo mode
+                Sample data
               </Badge>
             ) : null}
             <ModeToggle />

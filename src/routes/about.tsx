@@ -28,42 +28,41 @@ function AboutPage() {
         <div className="flex flex-wrap items-center gap-2">
           <h1 className="text-2xl font-semibold">About {appConfig.productName}</h1>
           <Badge variant={demoMode ? 'secondary' : 'outline'}>
-            {demoMode ? 'Demo data' : 'Database backed'}
+            {demoMode ? 'Sample data' : 'Live data'}
           </Badge>
           <Badge variant={authEnabled ? 'default' : 'outline'}>
             {authEnabled ? 'Identity on' : 'Identity off'}
           </Badge>
         </div>
         <p className="max-w-3xl text-muted-foreground">
-          This starter is designed to run immediately, then graduate to real data and Netlify Identity
-          when a fork is ready for production.
+          This app works right out of the box with sample data. When you're ready to go live, it can
+          connect to a real database and require people to sign in.
         </p>
       </div>
 
       <Alert>
         <Rocket className="size-4" />
-        <AlertTitle>Deploy without connecting GitHub</AlertTitle>
+        <AlertTitle>Publish without connecting GitHub</AlertTitle>
         <AlertDescription>
-          Use the fixed Netlify button to open Netlify Drop, or deploy from this folder with{' '}
-          <code>netlify deploy --build --prod</code>. Both paths avoid GitHub; this repo already has
-          the required <code>netlify.toml</code> settings.
+          Use the Deploy button to publish this app to Netlify — no GitHub account or code experience
+          needed.
         </AlertDescription>
       </Alert>
 
       <div className="grid gap-4 md:grid-cols-2">
         <InfoCard
           icon={Database}
-          title="Demo mode"
+          title="Sample data"
           description={
             demoMode
-              ? 'The current app is using in-memory records that reset on cold start.'
-              : 'The current app is reading and writing through the configured database path.'
+              ? "You're currently viewing sample data that resets each time the app restarts."
+              : "You're currently viewing real, saved data from a connected database."
           }
         >
           <p>
-            <code>DEMO_MODE</code> is the single switch for data source behavior. Leave it unset or set
-            to <code>true</code> for demos. Set it to <code>false</code> after provisioning Netlify
-            Database and applying migrations.
+            Sample mode is great for trying things out — nothing you do here is saved permanently.
+            Connecting a real database is a one-time setup step your developer can turn on when
+            you're ready to keep real records.
           </p>
         </InfoCard>
 
@@ -74,37 +73,33 @@ function AboutPage() {
             authEnabled
               ? user
                 ? `Signed in as ${user.email ?? user.id}.`
-                : 'Identity is enabled, but no user is signed in.'
-              : 'Identity is disabled, so the app does not require sign-in.'
+                : "Identity is turned on, but nobody's signed in right now."
+              : "Identity isn't turned on for this app yet."
           }
         >
           <p>
-            <code>AUTH_ENABLED</code> is the single switch for real authentication. When enabled,
-            Netlify Identity supplies the user session and role metadata.
+            When your developer turns on Identity, people will need an account to use this app, and you
+            can control what each person is allowed to do.
           </p>
         </InfoCard>
 
         <InfoCard
           icon={ShieldCheck}
-          title="Authorization"
-          description="Route guards are for user experience; server functions enforce the boundary."
+          title="Permissions"
+          description="Screens hide options you're not allowed to use, but the real check happens behind the scenes too."
         >
           <p>
-            Mutations and protected reads call <code>requireUser()</code> or <code>requireRole()</code>{' '}
-            before touching data, so authorization does not depend on a client-side redirect.
+            Every action is double-checked on the server, not just hidden from view — so permissions
+            can't be bypassed by changing what's shown on screen.
           </p>
         </InfoCard>
 
         <InfoCard
           icon={Rocket}
-          title="Deployment"
-          description="Manual deploys work without connecting a Git provider."
+          title="Publishing"
+          description="You can publish this app any time, without setting up GitHub."
         >
-          <p>
-            For a production deploy from local code, run <code>netlify deploy --build --prod</code>.
-            For a dashboard-first manual deploy, open Netlify Drop while signed in and drop this
-            project folder so Netlify can run the configured build.
-          </p>
+          <p>Use the Deploy button to publish your changes — no code experience needed.</p>
         </InfoCard>
       </div>
     </div>
