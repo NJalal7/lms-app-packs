@@ -1,4 +1,5 @@
-import { pgTable, uuid, text, numeric, date, timestamp, jsonb } from 'drizzle-orm/pg-core'
+import { pgTable, uuid, text, numeric, date, timestamp, jsonb, index } from 'drizzle-orm/pg-core'
+import { softDeleteColumns } from '@/db/soft-delete'
 
 /**
  * A JSON value with no `unknown` members. `createServerFn` (TanStack Start)
@@ -22,17 +23,24 @@ export type Json = string | number | boolean | null | { [key: string]: Json } | 
  * of shape.
  */
 
-export const records = pgTable('records', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  title: text('title').notNull(),
-  status: text('status').notNull().default('draft'), // draft | active | done | archived
-  owner: text('owner').notNull(),
-  amount: numeric('amount', { precision: 12, scale: 2 }).notNull().default('0'),
-  dueDate: date('due_date'),
-  notes: text('notes'),
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
-})
+export const records = pgTable(
+  'records',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    title: text('title').notNull(),
+    status: text('status').notNull().default('draft'), // draft | active | done | archived
+    owner: text('owner').notNull(),
+    amount: numeric('amount', { precision: 12, scale: 2 }).notNull().default('0'),
+    dueDate: date('due_date'),
+    notes: text('notes'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+    // Soft-delete convention — see src/db/soft-delete.ts. Every list/get/purge
+    // query filters on this column, hence the index.
+    ...softDeleteColumns,
+  },
+  (table) => [index('records_deleted_at_idx').on(table.deletedAt)],
+)
 
 // Named `RecordRow` (not `Record`) to avoid shadowing TypeScript's built-in
 // `Record<K, V>` utility type used elsewhere in this file and the app.

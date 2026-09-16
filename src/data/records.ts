@@ -2,13 +2,14 @@
 // writes live in memory and reset on cold start.
 
 import { randomUUID } from 'node:crypto'
-import { eq, desc } from 'drizzle-orm'
+import { eq, and, desc, isNotNull, lt } from 'drizzle-orm'
 import { isDemoMode } from '@/config/flags'
 import { getDb } from '@/db/client'
 import { records, type RecordRow, type NewRecord } from '@/db/schema'
+import { notDeleted, isNotDeleted } from '@/db/soft-delete'
 import { seedRecords } from '@/data/demo/seed'
 
-export type RecordInput = Omit<NewRecord, 'id' | 'createdAt' | 'updatedAt'>
+export type RecordInput = Omit<NewRecord, 'id' | 'createdAt' | 'updatedAt' | 'deletedAt'>
 
 function toRow(input: NewRecord & { id: string }): RecordRow {
   const now = new Date()
@@ -22,6 +23,7 @@ function toRow(input: NewRecord & { id: string }): RecordRow {
     id: input.id,
     createdAt: now,
     updatedAt: now,
+    deletedAt: input.deletedAt ?? null,
   }
 }
 
@@ -34,18 +36,25 @@ function sortByCreatedDesc(rows: Array<RecordRow>) {
 
 export async function listRecords(): Promise<Array<RecordRow>> {
   if (isDemoMode()) {
-    return sortByCreatedDesc(demoRecords)
+    return sortByCreatedDesc(demoRecords.filter(isNotDeleted))
   }
   const db = getDb()
-  return db.select().from(records).orderBy(desc(records.createdAt))
+  return db
+    .select()
+    .from(records)
+    .where(notDeleted(records.deletedAt))
+    .orderBy(desc(records.createdAt))
 }
 
 export async function getRecord(id: string): Promise<RecordRow | undefined> {
   if (isDemoMode()) {
-    return demoRecords.find((r) => r.id === id)
+    return demoRecords.find((r) => r.id === id && isNotDeleted(r))
   }
   const db = getDb()
-  const [row] = await db.select().from(records).where(eq(records.id, id))
+  const [row] = await db
+    .select()
+    .from(records)
+    .where(and(eq(records.id, id), notDeleted(records.deletedAt)))
   return row
 }
 
@@ -62,7 +71,10 @@ export async function createRecord(input: RecordInput): Promise<RecordRow> {
 
 export async function updateRecord(id: string, patch: Partial<RecordInput>): Promise<RecordRow | undefined> {
   if (isDemoMode()) {
-    const index = demoRecords.findIndex((r) => r.id === id)
+    // Guard against resurrecting a soft-deleted row's fields via a direct
+    // call that bypasses the (already-404ing) detail-page loader — matches
+    // the DB branch's `notDeleted` condition below.
+    const index = demoRecords.findIndex((r) => r.id === id && isNotDeleted(r))
     if (index === -1) return undefined
     const updated: RecordRow = { ...demoRecords[index], ...patch, updatedAt: new Date() }
     demoRecords = [...demoRecords.slice(0, index), updated, ...demoRecords.slice(index + 1)]
@@ -72,18 +84,52 @@ export async function updateRecord(id: string, patch: Partial<RecordInput>): Pro
   const [row] = await db
     .update(records)
     .set({ ...patch, updatedAt: new Date() })
-    .where(eq(records.id, id))
+    .where(and(eq(records.id, id), notDeleted(records.deletedAt)))
     .returning()
   return row
 }
 
-export async function deleteRecord(id: string): Promise<boolean> {
+/**
+ * Soft delete — marks the row `deletedAt` instead of removing it, so it's
+ * recoverable (an operator can null out `deletedAt` by hand; the base
+ * template ships no restore UI). See README > Soft delete for why this is
+ * always on, not configurable. Returns the updated row (with `deletedAt`
+ * set) on success, or `undefined` if `id` doesn't exist or is already
+ * soft-deleted.
+ */
+export async function deleteRecord(id: string): Promise<RecordRow | undefined> {
   if (isDemoMode()) {
-    const before = demoRecords.length
-    demoRecords = demoRecords.filter((r) => r.id !== id)
-    return demoRecords.length < before
+    const index = demoRecords.findIndex((r) => r.id === id && isNotDeleted(r))
+    if (index === -1) return undefined
+    const updated: RecordRow = { ...demoRecords[index], deletedAt: new Date() }
+    demoRecords = [...demoRecords.slice(0, index), updated, ...demoRecords.slice(index + 1)]
+    return updated
   }
   const db = getDb()
-  const deleted = await db.delete(records).where(eq(records.id, id)).returning({ id: records.id })
-  return deleted.length > 0
+  const [row] = await db
+    .update(records)
+    .set({ deletedAt: new Date() })
+    .where(and(eq(records.id, id), notDeleted(records.deletedAt)))
+    .returning()
+  return row
+}
+
+/**
+ * Hard purge — permanently removes records that were soft-deleted more than
+ * `retentionDays` ago. Only ever called by the scheduled function
+ * (`netlify/functions/purge-deleted-records.mts`), which itself only runs
+ * when `PURGE_ENABLED=true` (see `src/config/flags.ts`). Demo mode has no
+ * durable soft-delete state worth purging (it resets on cold start anyway),
+ * so it's a no-op there.
+ */
+export async function purgeExpiredRecords(retentionDays: number): Promise<Array<RecordRow>> {
+  if (isDemoMode()) {
+    return []
+  }
+  const db = getDb()
+  const cutoff = new Date(Date.now() - retentionDays * 24 * 60 * 60 * 1000)
+  return db
+    .delete(records)
+    .where(and(isNotNull(records.deletedAt), lt(records.deletedAt, cutoff)))
+    .returning()
 }

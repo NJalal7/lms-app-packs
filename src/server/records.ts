@@ -87,9 +87,11 @@ export const deleteRecordServer = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     await requireUser()
     const before = await getRecord(data.id)
-    const ok = await deleteRecord(data.id)
-    if (!ok) throw new Error('404: record not found')
-    await audit('record.deleted', 'record', data.id, before ?? null, null)
+    // Soft delete (see src/data/records.ts) — `deleted` is the row with
+    // `deletedAt` now set, not `null`, since the row still exists.
+    const deleted = await deleteRecord(data.id)
+    if (!deleted) throw new Error('404: record not found')
+    await audit('record.deleted', 'record', data.id, before ?? null, deleted)
     await trackEvent('record_deleted', { id: data.id })
     return { id: data.id }
   })

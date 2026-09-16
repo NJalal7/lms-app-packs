@@ -54,22 +54,42 @@ describe('records (demo mode)', () => {
     expect(result).toBeUndefined()
   })
 
-  it('deletes a record', async () => {
+  it('soft-deletes a record', async () => {
     const created = await createRecord({
       title: 'To delete',
       status: 'draft',
       owner: 'Owner',
       amount: '1.00',
     })
-    const ok = await deleteRecord(created.id)
-    expect(ok).toBe(true)
+    const deleted = await deleteRecord(created.id)
+    expect(deleted?.deletedAt).not.toBeNull()
 
+    // Soft-deleted rows are excluded from the default query, same as a
+    // truly-missing id.
     const found = await getRecord(created.id)
     expect(found).toBeUndefined()
   })
 
-  it('returns false when deleting an unknown id', async () => {
-    const ok = await deleteRecord('00000000-0000-0000-0000-000000000000')
-    expect(ok).toBe(false)
+  it('returns undefined when deleting an unknown id', async () => {
+    const deleted = await deleteRecord('00000000-0000-0000-0000-000000000000')
+    expect(deleted).toBeUndefined()
+  })
+
+  it('refuses to update a soft-deleted record', async () => {
+    const created = await createRecord({
+      title: 'To delete then edit',
+      status: 'draft',
+      owner: 'Owner',
+      amount: '1.00',
+    })
+    await deleteRecord(created.id)
+
+    // The `notDeleted` guard on updateRecord's WHERE clause (see
+    // src/data/records.ts) means a soft-deleted row can't be silently
+    // resurrected via an edit that bypasses the (already-404ing)
+    // detail-page loader — the update matches zero rows, same as an
+    // update against a genuinely unknown id.
+    const result = await updateRecord(created.id, { title: 'Should not apply' })
+    expect(result).toBeUndefined()
   })
 })
