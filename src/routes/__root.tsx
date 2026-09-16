@@ -23,6 +23,7 @@ export const Route = createRootRoute({
       { name: 'description', content: appConfig.tagline },
     ],
     links: [
+      { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
       { rel: 'stylesheet', href: appPackUiCss },
       { rel: 'stylesheet', href: appCss },
     ],

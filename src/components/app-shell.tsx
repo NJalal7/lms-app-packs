@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { Link } from '@tanstack/react-router'
-import { ExternalLink, Rocket } from 'lucide-react'
+import { ExternalLink } from 'lucide-react'
 import { appConfig } from '@/config/app'
 import { useAppContext } from '@/server/context'
 import { ModeToggle } from '@/components/mode-toggle'
@@ -35,7 +35,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 {item.label}
               </Link>
             ))}
-            {authEnabled && user?.roles?.includes('admin')
+            {authEnabled && user?.roles?.includes(appConfig.adminRole)
               ? appConfig.nav.admin.map((item) => (
                   <Link
                     key={item.to}
@@ -52,7 +52,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <div className="ml-auto flex items-center gap-3">
             {demoMode ? (
               <Badge variant="secondary" className="hidden sm:inline-flex">
-                Demo mode
+                Sample data
               </Badge>
             ) : null}
             <ModeToggle />
@@ -82,9 +82,12 @@ function NetlifyDeployCard() {
   return (
     <Card className="fixed right-4 bottom-4 z-50 w-[calc(100vw-2rem)] max-w-xs shadow-lg backdrop-blur supports-[backdrop-filter]:bg-card/95">
       <CardContent className="flex items-center gap-3">
-        <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-          <Rocket className="size-4" />
-        </div>
+        <img src="/netlify-logo-lightmode.svg" alt="Netlify" className="h-5 w-auto shrink-0 dark:hidden" />
+        <img
+          src="/netlify-logo-darkmode.svg"
+          alt="Netlify"
+          className="hidden h-5 w-auto shrink-0 dark:block"
+        />
         <div className="min-w-0 flex-1">
           <p className="text-sm font-medium">Deploy to Netlify</p>
           <p className="text-xs text-muted-foreground">No GitHub required.</p>

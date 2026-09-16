@@ -52,10 +52,10 @@ function Dashboard() {
     <div className="space-y-6">
       {demoMode ? (
         <Alert>
-          <AlertTitle>You're viewing demo data</AlertTitle>
+          <AlertTitle>You're viewing sample data</AlertTitle>
           <AlertDescription>
-            Everything here is in-memory and resets on the next cold start. Set <code>DEMO_MODE=false</code>{' '}
-            and provision a database to switch to real data — see the README.
+            These records are just for trying things out — they'll reset the next time the app
+            restarts. Ask your developer to connect a database when you're ready to keep real data.
           </AlertDescription>
         </Alert>
       ) : null}

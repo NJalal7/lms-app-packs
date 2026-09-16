@@ -32,3 +32,51 @@ export function isDemoMode(): boolean {
 export function isAuthEnabled(): boolean {
   return process.env.AUTH_ENABLED === 'true'
 }
+
+/**
+ * The role assigned to every new user at signup (see
+ * `netlify/functions/identity.mts`). Unlike `isDemoMode`/`isAuthEnabled`,
+ * this has no default: a vertical template MUST set `DEFAULT_ROLE` before
+ * enabling Identity signups, or every signup attempt fails loudly instead of
+ * silently assigning a made-up role name.
+ */
+export function getDefaultRole(): string {
+  const value = process.env.DEFAULT_ROLE
+  if (!value) {
+    throw new Error(
+      'DEFAULT_ROLE is not set. Set it to the role your vertical assigns new signups ' +
+        '(e.g. "member") as a site environment variable before enabling Identity signups. See README > Roles.',
+    )
+  }
+  return value
+}
+
+/**
+ * Whether the scheduled hard-purge job (`netlify/functions/purge-deleted-records.mts`)
+ * is allowed to permanently delete soft-deleted records. Off by default and
+ * genuinely inert when off — nothing reads `RECORD_RETENTION_DAYS` at all
+ * unless this is `true`. Soft delete itself (see `src/db/soft-delete.ts`) is
+ * always on and unrelated to this flag; this only gates permanent purging.
+ */
+export function isPurgeEnabled(): boolean {
+  return process.env.PURGE_ENABLED === 'true'
+}
+
+/**
+ * How many days a soft-deleted record is retained before the purge job
+ * permanently deletes it. Only ever called after confirming
+ * `isPurgeEnabled()` — a retention period is a compliance decision, not a
+ * safe engineering default, so this throws rather than guessing a number
+ * when purge is turned on but no retention window has been configured.
+ */
+export function getRetentionDays(): number {
+  const value = process.env.RECORD_RETENTION_DAYS
+  const days = Number(value)
+  if (!value || !Number.isFinite(days) || days <= 0) {
+    throw new Error(
+      'RECORD_RETENTION_DAYS is not set (or invalid). PURGE_ENABLED=true requires an explicit, ' +
+        'positive number of days — there is no safe default for a data-retention policy. See README > Soft delete.',
+    )
+  }
+  return days
+}
