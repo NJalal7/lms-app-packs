@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useSearch } from '@tanstack/react-router'
 import {
   login,
   signup,
@@ -6,10 +7,14 @@ import {
   oauthLogin,
   getSettings,
   handleAuthCallback,
+  requestPasswordRecovery,
+  updateUser,
+  acceptInvite,
+  MissingIdentityError,
   type AuthProvider,
   type Settings,
 } from '@netlify/identity'
-import { Button, Input } from '@netlify-labs/app-pack-ui'
+import { Button, Input, Alert, AlertTitle, AlertDescription } from '@netlify-labs/app-pack-ui'
 import { Field, FieldLabel, FieldError, FieldGroup, FieldDescription } from '@/components/ui/field'
 import { Separator } from '@/components/ui/separator'
 import { useSubmission } from '@/lib/submission'
@@ -26,10 +31,17 @@ export function useAuthCallback(authEnabled: boolean) {
     handleAuthCallback()
       .then((result) => {
         if (!result) return
-        if (result.type === 'invite' || result.type === 'recovery') {
-          // A downstream fork can route these to a dedicated
-          // set-password screen; the starter just lands on the dashboard.
-          window.location.href = '/'
+        if (result.type === 'recovery') {
+          // handleAuthCallback already redeemed the token and logged the
+          // user in, but their password hasn't actually changed yet —
+          // ResetPasswordForm finishes the flow with updateUser({ password }).
+          window.location.href = '/reset-password?flow=recovery'
+          return
+        }
+        if (result.type === 'invite') {
+          // No session yet for invites — `token` is redeemed together with
+          // the new password via acceptInvite() on the same form.
+          window.location.href = `/reset-password?flow=invite&token=${encodeURIComponent(result.token ?? '')}`
           return
         }
         if (result.type === 'oauth' || result.type === 'confirmation' || result.type === 'email_change') {
@@ -66,16 +78,56 @@ const PROVIDER_LABELS: Record<AuthProvider, string> = {
   email: 'Email',
 }
 
+/**
+ * `AUTH_ENABLED=true` only turns on this app's own auth code paths — it
+ * doesn't enable Netlify Identity for the site. Shown when `getSettings()`
+ * throws `MissingIdentityError`, so a team that set the env var but forgot
+ * the dashboard step gets a clear, upfront reason every submit will fail,
+ * instead of a generic error surfacing deep in a login/signup attempt.
+ */
+function IdentityUnavailableAlert() {
+  return (
+    <Alert variant="destructive">
+      <AlertTitle>Identity isn't enabled for this site yet</AlertTitle>
+      <AlertDescription>
+        <code>AUTH_ENABLED=true</code> is set, but Netlify Identity itself is
+        still off — no one can log in, sign up, or reset a password until
+        it's turned on. In the Netlify dashboard: Site configuration →
+        Identity → Enable Identity. See{' '}
+        <a
+          href="https://docs.netlify.com/manage/security/secure-access-to-sites/identity/get-started/#enable-identity"
+          target="_blank"
+          rel="noreferrer"
+        >
+          Netlify's Identity setup guide
+        </a>
+        .
+      </AlertDescription>
+    </Alert>
+  )
+}
+
 export function LoginForm() {
-  const [mode, setMode] = useState<'login' | 'signup'>('login')
+  const [mode, setMode] = useState<'login' | 'signup' | 'forgot'>('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [settings, setSettings] = useState<Settings | null>(null)
+  // AUTH_ENABLED=true only turns on this app's own auth code paths — it
+  // doesn't mean Identity is actually toggled on for the site in the
+  // Netlify dashboard. getSettings() is the cheapest call that tells us
+  // which one we're in: MissingIdentityError means the dashboard toggle is
+  // still off, so every login/signup/reset attempt would otherwise fail
+  // silently-ish (a generic error deep in a submit handler) instead of a
+  // clear, upfront reminder.
+  const [identityUnavailable, setIdentityUnavailable] = useState(false)
 
   useEffect(() => {
     getSettings()
       .then(setSettings)
-      .catch(() => setSettings(null))
+      .catch((err) => {
+        setSettings(null)
+        if (err instanceof MissingIdentityError) setIdentityUnavailable(true)
+      })
   }, [])
 
   const { state, run } = useSubmission(async () => {
@@ -87,11 +139,82 @@ export function LoginForm() {
     return user
   })
 
+  const { state: forgotState, run: runForgot } = useSubmission(async () => {
+    await requestPasswordRecovery(email)
+  })
+
   const oauthProviders = settings
     ? (Object.keys(settings.providers) as Array<AuthProvider>).filter(
         (p) => p !== 'email' && settings.providers[p],
       )
     : []
+
+  if (mode === 'forgot') {
+    return (
+      <div className="mx-auto w-full max-w-sm space-y-6">
+        <div className="space-y-1 text-center">
+          <h1 className="text-xl font-semibold">Reset your password</h1>
+          <p className="text-sm text-muted-foreground">
+            Enter your email and we'll send you a link to reset your password.
+          </p>
+        </div>
+
+        {identityUnavailable ? <IdentityUnavailableAlert /> : null}
+
+        {forgotState.status === 'success' ? (
+          <div className="space-y-4 text-center text-sm">
+            <p>
+              Check <strong>{email}</strong> for a link to reset your password.
+            </p>
+            <button
+              type="button"
+              className="underline underline-offset-4"
+              onClick={() => setMode('login')}
+            >
+              Back to log in
+            </button>
+          </div>
+        ) : (
+          <form
+            className="space-y-4"
+            onSubmit={(e) => {
+              e.preventDefault()
+              runForgot()
+            }}
+          >
+            <FieldGroup>
+              <Field>
+                <FieldLabel htmlFor="forgot-email">Email</FieldLabel>
+                <Input
+                  id="forgot-email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+                {forgotState.status === 'error' ? <FieldError>{forgotState.error}</FieldError> : null}
+              </Field>
+            </FieldGroup>
+
+            <Button type="submit" className="w-full" disabled={forgotState.status === 'submitting'}>
+              {forgotState.status === 'submitting' ? 'Sending...' : 'Send reset link'}
+            </Button>
+
+            <p className="text-center text-sm text-muted-foreground">
+              <button
+                type="button"
+                className="underline underline-offset-4"
+                onClick={() => setMode('login')}
+              >
+                Back to log in
+              </button>
+            </p>
+          </form>
+        )}
+      </div>
+    )
+  }
 
   return (
     <div className="mx-auto w-full max-w-sm space-y-6">
@@ -108,6 +231,8 @@ export function LoginForm() {
           </button>
         </p>
       </div>
+
+      {identityUnavailable ? <IdentityUnavailableAlert /> : null}
 
       <form
         className="space-y-4"
@@ -129,7 +254,18 @@ export function LoginForm() {
             />
           </Field>
           <Field>
-            <FieldLabel htmlFor="password">Password</FieldLabel>
+            <div className="flex items-center justify-between">
+              <FieldLabel htmlFor="password">Password</FieldLabel>
+              {mode === 'login' ? (
+                <button
+                  type="button"
+                  className="text-sm text-muted-foreground underline underline-offset-4"
+                  onClick={() => setMode('forgot')}
+                >
+                  Forgot password?
+                </button>
+              ) : null}
+            </div>
             <Input
               id="password"
               type="password"
@@ -172,6 +308,95 @@ export function LoginForm() {
         </code>{' '}
         instead.
       </FieldDescription>
+    </div>
+  )
+}
+
+/**
+ * Shared "set a password" screen for the two Identity flows that leave a
+ * token in the URL instead of landing the user straight in the app:
+ *
+ * - `flow=recovery` — handleAuthCallback() already redeemed the recovery
+ *   token and logged the user in, but their password hasn't changed yet.
+ *   Finishes with `updateUser({ password })`.
+ * - `flow=invite` — no session yet; `token` (from the invite email) and the
+ *   chosen password are redeemed together via `acceptInvite(token, password)`.
+ *
+ * Rendered by `src/routes/reset-password.tsx`, reached only via
+ * `useAuthCallback`'s redirect — see `src/auth/client.tsx`.
+ */
+export function ResetPasswordForm() {
+  const { flow, token } = useSearch({ from: '/reset-password' })
+  const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+
+  const { state, run } = useSubmission(async () => {
+    if (password !== confirmPassword) {
+      throw new Error('Passwords do not match.')
+    }
+    if (flow === 'invite') {
+      if (!token) throw new Error('Missing invite token — use the link from your invite email.')
+      await acceptInvite(token, password)
+    } else {
+      await updateUser({ password })
+    }
+    // Full reload — see LoginForm's identical comment on why this can't be
+    // a router navigate.
+    window.location.href = '/'
+  })
+
+  return (
+    <div className="mx-auto w-full max-w-sm space-y-6">
+      <div className="space-y-1 text-center">
+        <h1 className="text-xl font-semibold">
+          {flow === 'invite' ? 'Set your password' : 'Choose a new password'}
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          {flow === 'invite'
+            ? 'Set a password to finish creating your account.'
+            : 'Enter a new password for your account.'}
+        </p>
+      </div>
+
+      <form
+        className="space-y-4"
+        onSubmit={(e) => {
+          e.preventDefault()
+          run()
+        }}
+      >
+        <FieldGroup>
+          <Field>
+            <FieldLabel htmlFor="new-password">New password</FieldLabel>
+            <Input
+              id="new-password"
+              type="password"
+              autoComplete="new-password"
+              required
+              minLength={8}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="confirm-password">Confirm password</FieldLabel>
+            <Input
+              id="confirm-password"
+              type="password"
+              autoComplete="new-password"
+              required
+              minLength={8}
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+            />
+            {state.status === 'error' ? <FieldError>{state.error}</FieldError> : null}
+          </Field>
+        </FieldGroup>
+
+        <Button type="submit" className="w-full" disabled={state.status === 'submitting'}>
+          {state.status === 'submitting' ? 'Saving...' : 'Set password'}
+        </Button>
+      </form>
     </div>
   )
 }
