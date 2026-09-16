@@ -1,47 +1,11 @@
 import { redirect } from '@tanstack/react-router'
-import { getUser, type User } from '@netlify/identity'
 import { isAuthEnabled } from '@/config/flags'
 import { insertAudit } from '@/data/audit'
 import type { Json } from '@/db/schema'
+import { getSessionUser, type SessionUser } from '@/auth/session'
 
-export type SessionUser = User
-
-/**
- * Resolves the current session user. Three explicit branches:
- *
- * 1. Auth is off (`AUTH_ENABLED` unset/false) -> always `null`. The rest of
- *    the app treats a `null` user as "no auth required", not "logged out".
- * 2. Local dev override -> when running under `netlify dev` (so
- *    `NETLIFY_DEV === 'true'`) and `AUTH_DEV_USER` is set to a JSON blob
- *    like `{"email":"you@example.com","roles":["admin"]}`, that fake user is
- *    used. This exists because `@netlify/identity` does not work locally
- *    (there is no real Identity endpoint to talk to outside a deploy).
- * 3. Otherwise -> defer to `@netlify/identity`'s isomorphic `getUser()`,
- *    which reads the `nf_jwt` cookie from the incoming request and returns
- *    an already-normalized `{ id, email, name, roles, ... }` object (or
- *    `null`).
- */
-export async function getSessionUser(): Promise<SessionUser | null> {
-  if (!isAuthEnabled()) {
-    return null
-  }
-
-  if (process.env.NETLIFY_DEV === 'true' && process.env.AUTH_DEV_USER) {
-    try {
-      const parsed = JSON.parse(process.env.AUTH_DEV_USER) as Partial<User>
-      return {
-        id: parsed.id ?? 'dev-user',
-        email: parsed.email,
-        name: parsed.name ?? parsed.email,
-        roles: parsed.roles ?? [],
-      } as SessionUser
-    } catch {
-      console.warn('AUTH_DEV_USER is set but is not valid JSON — ignoring it.')
-    }
-  }
-
-  return getUser()
-}
+export { getSessionUser }
+export type { SessionUser }
 
 /**
  * Returns the current user, or redirects to `/login` if auth is on and no
@@ -60,16 +24,29 @@ export async function requireUser(): Promise<SessionUser | null> {
 
 /**
  * Throws a 403 error (rendered by `ErrorState` via the route's
- * `errorComponent`) if the current user lacks `role`. No-op when auth is
- * off, so admin routes stay reachable in demo mode.
+ * `errorComponent`) if the current user's roles don't intersect
+ * `allowedRoles`. No-op when auth is off, so gated routes stay reachable in
+ * demo mode.
+ *
+ * For TanStack Start route loaders / server functions only — it throws a
+ * router `redirect()` (via `requireUser()`) when there's no session, which
+ * only a route's loader/errorComponent machinery can catch. A raw Netlify
+ * Function has no router to catch that throw; use `checkRole()` from
+ * `src/auth/session.ts` there instead (also avoids pulling this file's
+ * TanStack Router + DB dependencies into your function's bundle).
+ *
+ * This has no knowledge of what role strings are valid — it only compares
+ * the session's roles against whatever `allowedRoles` list is passed in.
+ * Role values themselves are entirely up to the vertical built on top of
+ * this base template (see README > Roles).
  */
-export async function requireRole(role: string): Promise<SessionUser | null> {
+export async function requireRole(allowedRoles: string[]): Promise<SessionUser | null> {
   if (!isAuthEnabled()) return null
 
   const user = await requireUser()
   const roles = user?.roles ?? []
-  if (!roles.includes(role)) {
-    throw new Error(`403: you need the "${role}" role to view this page.`)
+  if (!allowedRoles.some((role) => roles.includes(role))) {
+    throw new Error(`403: you need one of these roles to view this page: ${allowedRoles.join(', ')}.`)
   }
   return user
 }

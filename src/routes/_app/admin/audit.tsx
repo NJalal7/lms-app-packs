@@ -2,16 +2,17 @@ import { createFileRoute } from '@tanstack/react-router'
 import { createServerFn } from '@tanstack/react-start'
 import { requireRole } from '@/auth/server'
 import { listAudit } from '@/data/audit'
+import { appConfig } from '@/config/app'
 import { Card, CardContent, CardHeader, CardTitle, EmptyState } from '@netlify-labs/app-pack-ui'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { LoadingState } from '@/components/states/loading-state'
 import { ErrorState } from '@/components/states/error-state'
 
 // Route-local server fn (not shared elsewhere, so it lives next to the one
-// route that uses it rather than in src/server/). `requireRole('admin')`
+// route that uses it rather than in src/server/). `requireRole([appConfig.adminRole])`
 // is the actual authorization check — the route guard below is just UX.
 const listAuditServer = createServerFn({ method: 'GET' }).handler(async () => {
-  await requireRole('admin')
+  await requireRole([appConfig.adminRole])
   return listAudit()
 })
 

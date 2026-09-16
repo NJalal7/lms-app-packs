@@ -37,6 +37,12 @@ export const appConfig = {
       { label: 'Usage events', to: '/admin/events' as const },
     ],
   },
+  // The role required to see the built-in demo admin section (audit log,
+  // usage events) and its nav links above. This is the only hardcoded role
+  // name in the base template — change it to whatever your vertical's
+  // taxonomy calls its top role, or remove the admin section entirely. See
+  // README > Roles for the generic RBAC mechanism this plugs into.
+  adminRole: 'admin',
 } as const
 
 export type AppConfig = typeof appConfig

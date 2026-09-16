@@ -35,7 +35,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 {item.label}
               </Link>
             ))}
-            {authEnabled && user?.roles?.includes('admin')
+            {authEnabled && user?.roles?.includes(appConfig.adminRole)
               ? appConfig.nav.admin.map((item) => (
                   <Link
                     key={item.to}

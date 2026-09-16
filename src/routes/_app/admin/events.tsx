@@ -2,13 +2,14 @@ import { createFileRoute } from '@tanstack/react-router'
 import { createServerFn } from '@tanstack/react-start'
 import { requireRole } from '@/auth/server'
 import { listEvents } from '@/data/events'
+import { appConfig } from '@/config/app'
 import { Card, CardContent, CardHeader, CardTitle, EmptyState } from '@netlify-labs/app-pack-ui'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { LoadingState } from '@/components/states/loading-state'
 import { ErrorState } from '@/components/states/error-state'
 
 const listEventsServer = createServerFn({ method: 'GET' }).handler(async () => {
-  await requireRole('admin')
+  await requireRole([appConfig.adminRole])
   return listEvents()
 })
 
