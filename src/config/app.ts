@@ -43,6 +43,15 @@ export const appConfig = {
   // taxonomy calls its top role, or remove the admin section entirely. See
   // README > Roles for the generic RBAC mechanism this plugs into.
   adminRole: 'admin',
+  // Roles allowed to upload/download files via `/api/upload` and
+  // `/api/files/:key` (see `netlify/functions/upload.mts` /
+  // `netlify/functions/files.mts`). Defaults to `[]` ("not configured
+  // yet"), which makes both endpoints fail-closed with 403 even when
+  // `AUTH_ENABLED=true` — these endpoints touch real Netlify Blobs storage,
+  // so they never fall back to a guessed role like `adminRole`. Set this to
+  // your vertical's own attachment roles, e.g. `['admin', 'recruiter']`.
+  // See README > Uploads.
+  uploadAllowedRoles: [] as string[],
 } as const
 
 export type AppConfig = typeof appConfig

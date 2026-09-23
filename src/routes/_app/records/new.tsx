@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { toast, Card, CardContent, CardHeader, CardTitle } from '@netlify-labs/app-pack-ui'
+import { toast, Card, CardContent, CardHeader, CardTitle } from 'app-packs-ui'
 import { createRecordServer, recordInputSchema, recordStatusValues } from '@/server/records'
 import { useAppForm } from '@/components/forms/use-app-form'
 import { useSubmission } from '@/lib/submission'

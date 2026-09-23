@@ -1,6 +1,6 @@
 import { AlertTriangle } from 'lucide-react'
 import type { ErrorComponentProps } from '@tanstack/react-router'
-import { Button, Alert, AlertDescription, AlertTitle } from '@netlify-labs/app-pack-ui'
+import { Button, Alert, AlertDescription, AlertTitle } from 'app-packs-ui'
 
 export function ErrorState({
   title = 'Something went wrong',
@@ -18,7 +18,7 @@ export function ErrorState({
       <AlertDescription className="space-y-3">
         <p>{message}</p>
         {onRetry ? (
-          <Button size="sm" variant="outline" onClick={onRetry}>
+          <Button size="small" variant="outline" onClick={onRetry}>
             Try again
           </Button>
         ) : null}

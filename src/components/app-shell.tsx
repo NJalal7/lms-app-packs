@@ -5,7 +5,7 @@ import { appConfig } from '@/config/app'
 import { useAppContext } from '@/server/context'
 import { ModeToggle } from '@/components/mode-toggle'
 import { LogoutButton } from '@/auth/client'
-import { Badge, Button, Card, CardContent } from '@netlify-labs/app-pack-ui'
+import { Badge, Button, Card, CardContent } from 'app-packs-ui'
 import { cn } from '@/lib/utils'
 
 /**
@@ -92,7 +92,7 @@ function NetlifyDeployCard() {
           <p className="text-sm font-medium">Deploy to Netlify</p>
           <p className="text-xs text-muted-foreground">No GitHub required.</p>
         </div>
-        <Button asChild size="sm">
+        <Button asChild size="small">
           <a href="https://app.netlify.com/drop" target="_blank" rel="noreferrer">
             Deploy
             <ExternalLink className="size-3.5" />

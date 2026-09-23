@@ -76,3 +76,32 @@ export async function audit(
     after: (after as Json | undefined) ?? null,
   })
 }
+
+/**
+ * Opt-in read-level audit logging — the read counterpart to `audit()`
+ * above. NOT wired into any getter automatically; call it explicitly from
+ * the specific server function(s) whose reads need a trail (e.g. EEO
+ * fields, attributed survey responses). Same persistence path and actor
+ * resolution as `audit()`, same no-op conditions — this is one log, not a
+ * parallel one, which is also why there's no `before`/`after` parameter: a
+ * read has no diff to record.
+ *
+ * Action strings should end in `.viewed` (e.g. `employee-record.viewed`),
+ * mirroring `audit()`'s `.created`/`.updated`/`.deleted` convention —
+ * `/admin/audit` uses that suffix to badge a row as a read vs. a mutation.
+ * See `src/server/example-audited-getter.ts` for a reference wiring.
+ */
+export async function auditRead(action: string, entity: string, entityId: string): Promise<void> {
+  if (!isAuthEnabled()) return
+
+  const user = await getSessionUser()
+  await insertAudit({
+    actorId: user?.id ?? null,
+    actorEmail: user?.email ?? null,
+    action,
+    entity,
+    entityId,
+    before: null,
+    after: null,
+  })
+}

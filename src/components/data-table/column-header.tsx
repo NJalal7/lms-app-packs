@@ -1,6 +1,6 @@
 import { ArrowDown, ArrowUp, ChevronsUpDown } from 'lucide-react'
 import type { Column, RowData } from '@tanstack/react-table'
-import { Button } from '@netlify-labs/app-pack-ui'
+import { Button } from 'app-packs-ui'
 import { cn } from '@/lib/utils'
 import { dataTableFeatures } from '@/components/data-table/features'
 
@@ -22,7 +22,7 @@ export function DataTableColumnHeader<TData extends RowData, TValue>({
   return (
     <Button
       variant="ghost"
-      size="sm"
+      size="small"
       className={cn('-ml-3 h-8 gap-1.5', className)}
       onClick={() => column.toggleSorting(sorted === 'asc')}
     >

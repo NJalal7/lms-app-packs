@@ -1,15 +1,23 @@
 import type { Config, Context } from '@netlify/functions'
 import { getStore } from '@netlify/blobs'
-import { getUser } from '@netlify/identity'
 import { isAuthEnabled } from '../../src/config/flags'
+import { checkRole } from '../../src/auth/session'
+import { appConfig } from '../../src/config/app'
 
 export default async (req: Request, context: Context) => {
-  if (isAuthEnabled()) {
-    const user = await getUser()
-    if (!user) {
-      return new Response('Unauthorized', { status: 401 })
-    }
+  // These endpoints touch real Netlify Blobs storage, so they fail closed
+  // rather than falling back to demo-mode-style "auth off means open"
+  // behavior — see README > Uploads.
+  if (!isAuthEnabled()) {
+    return Response.json({ error: 'not_configured' }, { status: 403 })
   }
+
+  if (appConfig.uploadAllowedRoles.length === 0) {
+    return Response.json({ error: 'not_configured' }, { status: 403 })
+  }
+
+  const denied = await checkRole(appConfig.uploadAllowedRoles)
+  if (denied) return denied
 
   const key = context.params.key
   if (!key) {

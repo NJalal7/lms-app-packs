@@ -1,11 +1,13 @@
 import type { UserSignupHandler } from '@netlify/functions'
-import { getDefaultRole } from '../../src/config/flags'
+import { getDefaultRole, getAllowedSignupDomain } from '../../src/config/flags'
 
 /**
  * Netlify Identity signup event hook. Assigns `DEFAULT_ROLE` to every new
  * user's `app_metadata.roles` at signup time, so a vertical never has to
  * manually assign a starting role to every signup from the Identity
- * dashboard.
+ * dashboard. Also enforces `ALLOWED_SIGNUP_DOMAIN`, if set — see
+ * `getAllowedSignupDomain()` (`src/config/flags.ts`) for why that check is
+ * optional rather than fail-loud like `DEFAULT_ROLE`.
  *
  * Role membership always lives in `app_metadata` (never `user_metadata`) —
  * `user_metadata` is user-editable via the Identity API, so a role stored
@@ -18,6 +20,14 @@ import { getDefaultRole } from '../../src/config/flags'
  * name. See README > Roles.
  */
 const userSignup: UserSignupHandler = (event) => {
+  const allowedDomain = getAllowedSignupDomain()
+  if (allowedDomain) {
+    const emailDomain = event.user.email?.split('@')[1]?.toLowerCase()
+    if (emailDomain !== allowedDomain) {
+      return event.deny()
+    }
+  }
+
   const role = getDefaultRole()
   return {
     user: {

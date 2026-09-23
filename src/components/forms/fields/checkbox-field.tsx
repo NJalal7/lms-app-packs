@@ -1,6 +1,6 @@
 import { useFieldContext } from '@/components/forms/form-context'
 import { Field, FieldLabel, FieldError } from '@/components/ui/field'
-import { Checkbox } from '@netlify-labs/app-pack-ui'
+import { Checkbox } from 'app-packs-ui'
 
 export function CheckboxField({ label }: { label: string }) {
   const field = useFieldContext<boolean>()
@@ -14,7 +14,7 @@ export function CheckboxField({ label }: { label: string }) {
         checked={!!field.state.value}
         aria-invalid={errors.length > 0}
         onBlur={field.handleBlur}
-        onCheckedChange={(checked) => field.handleChange(checked === true)}
+        onChange={(event) => field.handleChange(event.currentTarget.checked)}
       />
       <FieldLabel htmlFor={field.name} className="font-normal">
         {label}

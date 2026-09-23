@@ -4,7 +4,7 @@ import { listRecordsServer, recordStatusValues } from '@/server/records'
 import type { RecordRow } from '@/db/schema'
 import { DataTable, type DataTableColumn } from '@/components/data-table/data-table'
 import { DataTableColumnHeader } from '@/components/data-table/column-header'
-import { Button, Badge, EmptyState } from '@netlify-labs/app-pack-ui'
+import { Button, Badge, EmptyState } from 'app-packs-ui'
 import { LoadingState } from '@/components/states/loading-state'
 import { ErrorState } from '@/components/states/error-state'
 
@@ -17,8 +17,8 @@ export const Route = createFileRoute('/_app/records/')({
   component: RecordsPage,
 })
 
-const statusVariant: Record<string, 'default' | 'secondary' | 'outline'> = {
-  active: 'default',
+const statusVariant: Record<string, 'primary' | 'secondary' | 'outline'> = {
+  active: 'primary',
   draft: 'secondary',
   done: 'outline',
   archived: 'outline',
@@ -97,7 +97,7 @@ function RecordsPage() {
             title="No records"
             description="Create your first record to get started."
             action={
-              <Button asChild size="sm">
+              <Button asChild size="small">
                 <Link to="/records/new">New record</Link>
               </Button>
             }

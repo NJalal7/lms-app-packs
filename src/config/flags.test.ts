@@ -1,5 +1,12 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { isDemoMode, isAuthEnabled, getDefaultRole, isPurgeEnabled, getRetentionDays } from './flags'
+import {
+  isDemoMode,
+  isAuthEnabled,
+  getDefaultRole,
+  getAllowedSignupDomain,
+  isPurgeEnabled,
+  getRetentionDays,
+} from './flags'
 
 describe('isDemoMode', () => {
   const original = { ...process.env }
@@ -68,6 +75,27 @@ describe('getDefaultRole', () => {
   it('returns the configured value', () => {
     process.env.DEFAULT_ROLE = 'member'
     expect(getDefaultRole()).toBe('member')
+  })
+})
+
+describe('getAllowedSignupDomain', () => {
+  afterEach(() => {
+    delete process.env.ALLOWED_SIGNUP_DOMAIN
+  })
+
+  it('is undefined by default (no restriction)', () => {
+    delete process.env.ALLOWED_SIGNUP_DOMAIN
+    expect(getAllowedSignupDomain()).toBeUndefined()
+  })
+
+  it('is undefined when set to an empty/whitespace string', () => {
+    process.env.ALLOWED_SIGNUP_DOMAIN = '   '
+    expect(getAllowedSignupDomain()).toBeUndefined()
+  })
+
+  it('returns the configured domain, trimmed and lowercased', () => {
+    process.env.ALLOWED_SIGNUP_DOMAIN = '  Acme.Com  '
+    expect(getAllowedSignupDomain()).toBe('acme.com')
   })
 })
 

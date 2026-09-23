@@ -70,6 +70,7 @@ vertical — full detail is in the linked section, this is just orientation.
 | `NETLIFY_DB_URL`                                         | —                     | Set automatically by `@netlify/database` / `netlify database init`. Don't set by hand.                                                                                         |
 | `AUTH_DEV_USER`                                          | —                     | Local-dev-only fake session, e.g. `{"email":"you@example.com","roles":["admin"]}`. Only honored when `AUTH_ENABLED=true` and running under `netlify dev` (`NETLIFY_DEV=true`). |
 | `DEFAULT_ROLE`                                           | —                     | Required once signups are enabled — the role assigned to new users at signup. See "Roles" below. No default; signups fail loudly until this is set.                          |
+| `ALLOWED_SIGNUP_DOMAIN`                                  | —                     | Optional — restricts signups to one exact email domain (no subdomains). Unset means no restriction. See "Roles" below.                                                         |
 | `PURGE_ENABLED`                                          | `false`               | `true` turns on permanent deletion of already soft-deleted records. Off is genuinely inert — no purge job runs. See "Soft delete" below.                                       |
 | `RECORD_RETENTION_DAYS`                                  | —                     | Required once `PURGE_ENABLED=true` — days a soft-deleted record is kept before permanent purge. No default; purge fails loudly until this is set.                             |
 | `SLACK_WEBHOOK_URL`                                      | —                     | Enables the `slack` notify channel.                                                                                                                                            |
@@ -116,7 +117,8 @@ With auth on:
   `requireRole()` inside each server function (`src/server/*.ts`), which runs
   regardless of how the request got there.
 - Mutations get audit-logged (actor, action, before/after) — see
-  `/admin/audit`.
+  `/admin/audit`. Read-level logging exists too, but is opt-in per call
+  site — see "Audit logging" below.
 
 **If `AUTH_ENABLED=true` but step 1 above was skipped** (Identity not
 actually enabled for the site), `/login` shows a persistent alert instead of
@@ -160,6 +162,15 @@ Identity dashboard's "Roles" field writes, and what `netlify.toml`'s
   variables" above) to every new user's `app_metadata.roles` automatically.
   Identity event hooks only fire against a real deploy with Identity
   enabled — not under `netlify dev`.
+- **Restricting who can sign up**: the same hook optionally enforces
+  `ALLOWED_SIGNUP_DOMAIN` — set it to one exact email domain (e.g.
+  `acme.com`) and any signup whose email domain doesn't match exactly (no
+  subdomains) is denied via `event.deny()` before a role is ever assigned.
+  Unlike `DEFAULT_ROLE`, this is optional rather than fail-loud: the hook
+  has no way to know whether Identity's "open signups" setting is even on,
+  so it can't force every deployment to configure it. Unset (the default)
+  means no restriction — correct for invite-only setups, where every
+  signup already comes from a trusted invite rather than open self-signup.
 - **Beyond the default**: promote specific users to additional roles from
   the Identity tab in the Netlify dashboard (Users → select a user → edit
   their Roles). There is no in-app role-management UI by design — this is
@@ -190,6 +201,39 @@ boilerplate that shouldn't need to change per vertical.
 gates the built-in demo `/admin` section (audit log, usage events) and its
 nav links. Rename it, or remove the admin section entirely, when forking
 for a vertical with its own taxonomy.
+
+`appConfig.uploadAllowedRoles` (`src/config/app.ts`, defaults to `[]`) is a
+second, separate role list gating `/api/upload` and `/api/files/:key` (see
+"Uploads" below) — it deliberately does **not** default to `[appConfig.adminRole]`,
+so every vertical picks its own attachment roles explicitly, e.g.
+`['admin', 'recruiter']`.
+
+## Audit logging
+
+Like Roles, this is a *mechanism*, not a policy — the base template has no
+opinion on which reads or writes are sensitive enough to log; that judgment
+belongs to whatever vertical is built on top.
+
+**Mutations are always logged, not configurable:** `audit(action, entity,
+entityId, before?, after?)`, from `src/auth/server.ts`, writes an entry
+(actor, action, before/after) for every create/update/delete. It's already
+called from the three `src/server/records.ts` server functions
+(`record.created`/`record.updated`/`record.deleted`) — copy that call
+pattern for any new entity's mutations. No-ops when `AUTH_ENABLED` is off.
+
+**Reads are opt-in, per call site:** `auditRead(action, entity, entityId)`,
+also from `src/auth/server.ts`, is the read counterpart — same persistence
+path and actor resolution as `audit()`, just no before/after (a read has no
+diff). **Nothing calls this automatically.** In particular, `records`'
+`getRecord`/`listRecords` do not call it — `records` is reference demo data,
+not sensitive, and logging every view of it would just be noise that trains
+people to ignore `/admin/audit`. Call `auditRead()` explicitly from the
+specific getter(s) that need a "who viewed this" trail (e.g. EEO fields,
+attributed survey responses), using an action string ending in `.viewed`
+(mirroring `audit()`'s `.created`/`.updated`/`.deleted` convention — see
+`/admin/audit`'s Read/Change badge, which keys off that suffix). See
+`src/server/example-audited-getter.ts` for a complete reference
+implementation — copy it, point it at your real sensitive getter, done.
 
 ## Soft delete
 
@@ -302,8 +346,26 @@ map in `netlify/functions/notify.mts`.
 `src/components/upload/file-upload.tsx` is a drag/drop uploader wired to
 `/api/upload` (`netlify/functions/upload.mts`), which stores files in a
 Netlify Blobs store named `uploads` (4 MB cap — the Netlify Functions request
-body limit) and gates access behind auth when `AUTH_ENABLED=true`.
-`/api/files/:key` (`netlify/functions/files.mts`) streams a file back out.
+body limit). `/api/files/:key` (`netlify/functions/files.mts`) streams a
+file back out.
+
+**Both endpoints fail closed, unconditionally** — they touch real Netlify
+Blobs storage, so unlike the rest of the app they never treat "auth off" as
+"open to everyone." Both apply the same three guards, in order, before doing
+anything else:
+
+1. `AUTH_ENABLED` must be `true` — if it isn't, every request gets `403`,
+   even in demo mode.
+2. `appConfig.uploadAllowedRoles` (`src/config/app.ts`) must be a non-empty
+   array — it defaults to `[]`, so every request gets `403` until you set it
+   to your vertical's own attachment roles, e.g. `['admin', 'recruiter']`.
+   It deliberately does not default to `[appConfig.adminRole]`.
+3. `checkRole(appConfig.uploadAllowedRoles)` — the requesting user's session
+   must have one of those roles, or they get `401`/`403`.
+
+The uploader's client code shows a specific "uploads are disabled" message
+when step 1 or 2 is the reason for a `403`, distinct from a plain
+authorization failure at step 3.
 
 It isn't attached to any entity by default. To attach an upload to a record,
 store the returned `{ key, url }` on the record (add a column in
@@ -367,6 +429,7 @@ src/db/schema.ts          # Drizzle schema (source of truth for the DB shape)
 src/db/soft-delete.ts      # deletedAt column mixin + shared query filter helpers
 src/data/                 # one file per entity, demo/DB branches inside
 src/server/                # createServerFn wrappers (Zod validation, auth, audit)
+                              # example-audited-getter (opt-in read-audit reference)
 src/auth/                  # session resolution, route guards, login UI
 src/routes/                 # file-based routes (TanStack Router)
 src/components/              # shadcn ui/, data-table/, forms/, states/

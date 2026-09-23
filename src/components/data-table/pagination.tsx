@@ -1,6 +1,6 @@
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react'
 import type { ReactTable, RowData } from '@tanstack/react-table'
-import { Button } from '@netlify-labs/app-pack-ui'
+import { Button } from 'app-packs-ui'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { dataTableFeatures } from '@/components/data-table/features'
 

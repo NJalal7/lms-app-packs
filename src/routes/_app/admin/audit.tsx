@@ -3,7 +3,7 @@ import { createServerFn } from '@tanstack/react-start'
 import { requireRole } from '@/auth/server'
 import { listAudit } from '@/data/audit'
 import { appConfig } from '@/config/app'
-import { Card, CardContent, CardHeader, CardTitle, EmptyState } from '@netlify-labs/app-pack-ui'
+import { Badge, Card, CardContent, CardHeader, CardTitle, EmptyState } from 'app-packs-ui'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { LoadingState } from '@/components/states/loading-state'
 import { ErrorState } from '@/components/states/error-state'
@@ -32,7 +32,9 @@ function AuditPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold">Audit log</h1>
-        <p className="text-muted-foreground">Every mutation, with actor and before/after state.</p>
+        <p className="text-muted-foreground">
+          Every mutation (with before/after state) and every opt-in logged read, with actor.
+        </p>
       </div>
 
       <Card>
@@ -43,7 +45,7 @@ function AuditPage() {
           {entries.length === 0 ? (
             <EmptyState
               title="No audit entries yet"
-              description="Mutations will appear here once auth is on."
+              description="Mutations, and any opt-in logged reads, will appear here once auth is on."
             />
           ) : (
             <Table>
@@ -56,16 +58,29 @@ function AuditPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {entries.map((entry) => (
-                  <TableRow key={entry.id}>
-                    <TableCell>{new Date(entry.createdAt).toLocaleString()}</TableCell>
-                    <TableCell>{entry.actorEmail ?? 'unknown'}</TableCell>
-                    <TableCell>{entry.action}</TableCell>
-                    <TableCell>
-                      {entry.entity} ({entry.entityId.slice(0, 8)})
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {entries.map((entry) => {
+                  // `.viewed`-suffixed actions are opt-in read-log entries
+                  // (see `auditRead()` in `src/auth/server.ts`); everything
+                  // else is a mutation logged via `audit()`.
+                  const isRead = entry.action.endsWith('.viewed')
+                  return (
+                    <TableRow key={entry.id}>
+                      <TableCell>{new Date(entry.createdAt).toLocaleString()}</TableCell>
+                      <TableCell>{entry.actorEmail ?? 'unknown'}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Badge variant={isRead ? 'outline' : 'secondary'}>
+                            {isRead ? 'Read' : 'Change'}
+                          </Badge>
+                          <span>{entry.action}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {entry.entity} ({entry.entityId.slice(0, 8)})
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
               </TableBody>
             </Table>
           )}

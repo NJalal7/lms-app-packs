@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { toast, Card, CardContent, CardHeader, CardTitle, Button } from '@netlify-labs/app-pack-ui'
+import { toast, Card, CardContent, CardHeader, CardTitle, Button } from 'app-packs-ui'
 import { Trash2 } from 'lucide-react'
 import {
   getRecordServer,
@@ -69,7 +69,7 @@ function RecordDetailPage() {
 
         <AlertDialog>
           <AlertDialogTrigger asChild>
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="small">
               <Trash2 className="size-4" />
               Delete
             </Button>

@@ -13,7 +13,7 @@ import {
   Alert,
   AlertDescription,
   AlertTitle,
-} from '@netlify-labs/app-pack-ui'
+} from 'app-packs-ui'
 import { LoadingState } from '@/components/states/loading-state'
 import { ErrorState } from '@/components/states/error-state'
 
@@ -33,8 +33,8 @@ export const Route = createFileRoute('/')({
   component: Dashboard,
 })
 
-const statusVariant: Record<string, 'default' | 'secondary' | 'outline'> = {
-  active: 'default',
+const statusVariant: Record<string, 'primary' | 'secondary' | 'outline'> = {
+  active: 'primary',
   draft: 'secondary',
   done: 'outline',
   archived: 'outline',
@@ -101,7 +101,7 @@ function Dashboard() {
             <CardTitle>Recent records</CardTitle>
             <CardDescription>The 5 most recently created records.</CardDescription>
           </div>
-          <Button asChild size="sm" variant="outline">
+          <Button asChild size="small" variant="outline">
             <Link to="/records">View all</Link>
           </Button>
         </CardHeader>

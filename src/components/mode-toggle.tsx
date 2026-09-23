@@ -1,5 +1,5 @@
 import { Moon, Sun } from 'lucide-react'
-import { useTheme, Button } from '@netlify-labs/app-pack-ui'
+import { useTheme, Button } from 'app-packs-ui'
 
 export function ModeToggle() {
   const { resolvedTheme, setTheme } = useTheme()

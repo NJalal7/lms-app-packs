@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { Button, NotFoundState } from '@netlify-labs/app-pack-ui'
+import { Button, NotFoundState } from 'app-packs-ui'
 
 /** Used as the router's `defaultNotFoundComponent`. */
 export function NotFound() {
@@ -7,7 +7,7 @@ export function NotFound() {
     <div className="flex min-h-[40vh] items-center justify-center p-6">
       <NotFoundState
         action={
-          <Button asChild size="sm">
+          <Button asChild size="small">
             <Link to="/">Back to dashboard</Link>
           </Button>
         }

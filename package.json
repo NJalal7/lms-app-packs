@@ -16,7 +16,6 @@
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.3.0",
-    "@netlify-labs/app-pack-ui": "github:gehrig-netlify/app-pack-ui#1fd8c963b2a64fb08e7998b5cee5acdc42b3b3a2",
     "@netlify/blobs": "^11.0.3",
     "@netlify/database": "^2.0.1",
     "@netlify/functions": "^6.0.0",
@@ -25,6 +24,7 @@
     "@tanstack/react-router": "^1.170.32",
     "@tanstack/react-start": "^1.168.49",
     "@tanstack/react-table": "^9.2.4",
+    "app-packs-ui": "0.3.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "drizzle-orm": "^1.0.0-rc.4",

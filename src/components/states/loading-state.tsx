@@ -1,4 +1,4 @@
-import { Skeleton } from '@netlify-labs/app-pack-ui'
+import { Skeleton } from 'app-packs-ui'
 
 type LoadingVariant = 'table' | 'form' | 'card' | 'page'
 

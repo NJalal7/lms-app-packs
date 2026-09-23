@@ -13,7 +13,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@netlify-labs/app-pack-ui'
+} from 'app-packs-ui'
 
 export const Route = createFileRoute('/about')({
   component: AboutPage,
@@ -30,7 +30,7 @@ function AboutPage() {
           <Badge variant={demoMode ? 'secondary' : 'outline'}>
             {demoMode ? 'Sample data' : 'Live data'}
           </Badge>
-          <Badge variant={authEnabled ? 'default' : 'outline'}>
+          <Badge variant={authEnabled ? 'primary' : 'outline'}>
             {authEnabled ? 'Identity on' : 'Identity off'}
           </Badge>
         </div>

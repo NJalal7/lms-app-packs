@@ -1,6 +1,6 @@
 import { useFieldContext } from '@/components/forms/form-context'
 import { Field, FieldLabel, FieldError, FieldDescription } from '@/components/ui/field'
-import { Input } from '@netlify-labs/app-pack-ui'
+import { Input } from 'app-packs-ui'
 
 export function TextField({
   label,

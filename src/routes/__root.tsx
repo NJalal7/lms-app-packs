@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { createRootRoute, HeadContent, Outlet, Scripts, useRouter } from '@tanstack/react-router'
-import { ThemeProvider, Toaster } from '@netlify-labs/app-pack-ui'
+import { ThemeProvider, Toaster } from 'app-packs-ui'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { BrandTheme } from '@/components/brand-theme'
 import { AppShell } from '@/components/app-shell'
@@ -8,7 +8,7 @@ import { appConfig } from '@/config/app'
 import { getAppContext, type AppContext } from '@/server/context'
 import { useAuthCallback } from '@/auth/client'
 import { trackEvent } from '@/lib/track-event'
-import appPackUiCss from '@netlify-labs/app-pack-ui/styles.css?url'
+import appPackUiCss from 'app-packs-ui/styles.css?url'
 import appCss from '@/styles.css?url'
 
 export const Route = createRootRoute({

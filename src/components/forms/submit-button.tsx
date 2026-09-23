@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { Loader2 } from 'lucide-react'
-import { Button } from '@netlify-labs/app-pack-ui'
+import { Button } from 'app-packs-ui'
 import type { SubmissionState } from '@/lib/submission'
 
 /**

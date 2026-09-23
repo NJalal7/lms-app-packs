@@ -8,11 +8,13 @@ apps. Read this before making changes.
   (`src/data/*.ts`) and resets on cold start.
 - **One flag controls each toggle**: `DEMO_MODE` (data source), `AUTH_ENABLED`
   (real auth), `DEFAULT_ROLE` (role assigned at signup, required once
-  signups are enabled), and `PURGE_ENABLED`/`RECORD_RETENTION_DAYS` (hard
-  purge of soft-deleted records — off by default, `RECORD_RETENTION_DAYS`
-  required once `PURGE_ENABLED=true`). All live in `src/config/flags.ts` —
-  read `process.env` only inside those functions, never at module scope,
-  never anywhere else.
+  signups are enabled), `ALLOWED_SIGNUP_DOMAIN` (optional — restricts
+  signups to one exact email domain, no subdomains), and
+  `PURGE_ENABLED`/`RECORD_RETENTION_DAYS` (hard purge of soft-deleted
+  records — off by default, `RECORD_RETENTION_DAYS` required once
+  `PURGE_ENABLED=true`). All live in `src/config/flags.ts` — read
+  `process.env` only inside those functions, never at module scope, never
+  anywhere else.
 - **Branding lives in one file**: `src/config/app.ts`. If you're asked to
   rebrand the app, that's the only file that should change (plus swapping
   `/public/logo.svg`).
@@ -39,7 +41,18 @@ apps. Read this before making changes.
   `server.ts`'s TanStack Router/DB dependencies into the function's bundle)
   — see `netlify/functions/example-protected.mts`. Both are pure boilerplate;
   only the `allowedRoles` array is vertical-specific. Roles live in Identity's
-  `app_metadata.roles`, never `user_metadata` — see README > Roles.
+  `app_metadata.roles`, never `user_metadata` — see README > Roles. Mutations
+  are always audit-logged via `audit()`; read-level logging via
+  `auditRead(action, entity, entityId)` (same file) is opt-in and NOT wired
+  into any getter automatically — call it explicitly from a sensitive
+  getter's server function, see `src/server/example-audited-getter.ts` for
+  the reference pattern and README > Audit logging.
+- **Uploads fail closed until configured**: `netlify/functions/upload.mts`
+  and `netlify/functions/files.mts` (`/api/upload`, `/api/files/:key`) 403
+  unconditionally unless `AUTH_ENABLED=true` **and**
+  `appConfig.uploadAllowedRoles` (`src/config/app.ts`, defaults to `[]`) is a
+  non-empty list of roles allowed to upload/download — set it explicitly
+  before relying on these endpoints. See README > Uploads.
 - **Auth UI covers login, signup, forgot-password, and invite/recovery
   acceptance**: `src/auth/client.tsx` (`LoginForm`, `ResetPasswordForm`) and
   `src/routes/login.tsx` / `src/routes/reset-password.tsx`. If `AUTH_ENABLED=true`

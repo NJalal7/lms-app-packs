@@ -5,7 +5,7 @@ import { dataTableFeatures } from '@/components/data-table/features'
 import { DataTableToolbar, type FilterableColumn } from '@/components/data-table/toolbar'
 import { DataTablePagination } from '@/components/data-table/pagination'
 import { LoadingState } from '@/components/states/loading-state'
-import { EmptyState } from '@netlify-labs/app-pack-ui'
+import { EmptyState } from 'app-packs-ui'
 
 export type DataTableColumn<TData extends RowData> = ColumnDef<typeof dataTableFeatures, TData, any>
 

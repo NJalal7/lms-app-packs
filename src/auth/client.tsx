@@ -14,7 +14,7 @@ import {
   type AuthProvider,
   type Settings,
 } from '@netlify/identity'
-import { Button, Input, Alert, AlertTitle, AlertDescription } from '@netlify-labs/app-pack-ui'
+import { Button, Input, Alert, AlertTitle, AlertDescription } from 'app-packs-ui'
 import { Field, FieldLabel, FieldError, FieldGroup, FieldDescription } from '@/components/ui/field'
 import { Separator } from '@/components/ui/separator'
 import { useSubmission } from '@/lib/submission'
@@ -58,7 +58,7 @@ export function LogoutButton() {
   return (
     <Button
       variant="ghost"
-      size="sm"
+      size="small"
       onClick={async () => {
         await logout()
         window.location.href = '/login'
