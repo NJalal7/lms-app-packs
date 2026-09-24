@@ -15,7 +15,6 @@
     "db:seed": "netlify dev:exec tsx scripts/seed.ts"
   },
   "dependencies": {
-    "@fontsource-variable/geist": "^5.3.0",
     "@netlify/blobs": "^11.0.3",
     "@netlify/database": "^2.0.1",
     "@netlify/functions": "^6.0.0",

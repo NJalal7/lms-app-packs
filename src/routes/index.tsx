@@ -1,7 +1,6 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { FileText, Clock, DollarSign } from 'lucide-react'
 import { listRecordsServer } from '@/server/records'
-import { useAppContext } from '@/server/context'
 import {
   Card,
   CardHeader,
@@ -10,9 +9,6 @@ import {
   CardContent,
   Badge,
   Button,
-  Alert,
-  AlertDescription,
-  AlertTitle,
 } from 'app-packs-ui'
 import { LoadingState } from '@/components/states/loading-state'
 import { ErrorState } from '@/components/states/error-state'
@@ -42,7 +38,6 @@ const statusVariant: Record<string, 'primary' | 'secondary' | 'outline'> = {
 
 function Dashboard() {
   const records = Route.useLoaderData()
-  const { demoMode } = useAppContext()
 
   const activeCount = records.filter((r) => r.status === 'active').length
   const totalAmount = records.reduce((sum, r) => sum + Number(r.amount), 0)
@@ -50,16 +45,6 @@ function Dashboard() {
 
   return (
     <div className="space-y-6">
-      {demoMode ? (
-        <Alert>
-          <AlertTitle>You're viewing sample data</AlertTitle>
-          <AlertDescription>
-            These records are just for trying things out — they'll reset the next time the app
-            restarts. Ask your developer to connect a database when you're ready to keep real data.
-          </AlertDescription>
-        </Alert>
-      ) : null}
-
       <div>
         <h1 className="text-2xl font-semibold">Dashboard</h1>
         <p className="text-muted-foreground">An overview of all records.</p>

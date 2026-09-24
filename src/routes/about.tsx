@@ -4,9 +4,6 @@ import { Database, Fingerprint, Rocket, ShieldCheck, type LucideIcon } from 'luc
 import { appConfig } from '@/config/app'
 import { useAppContext } from '@/server/context'
 import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
   Badge,
   Card,
   CardContent,
@@ -35,34 +32,24 @@ function AboutPage() {
           </Badge>
         </div>
         <p className="max-w-3xl text-muted-foreground">
-          This app works right out of the box with sample data. When you're ready to go live, it can
-          connect to a real database and require people to sign in.
+          This app includes Netlify Database for saved records and Netlify Identity for sign-in and
+          permissions. Sample data lets you explore the workflow before saving live records.
         </p>
       </div>
-
-      <Alert>
-        <Rocket className="size-4" />
-        <AlertTitle>Publish without connecting GitHub</AlertTitle>
-        <AlertDescription>
-          Use the Deploy button to publish this app to Netlify — no GitHub account or code experience
-          needed.
-        </AlertDescription>
-      </Alert>
 
       <div className="grid gap-4 md:grid-cols-2">
         <InfoCard
           icon={Database}
-          title="Sample data"
+          title="Netlify Database"
           description={
             demoMode
-              ? "You're currently viewing sample data that resets each time the app restarts."
-              : "You're currently viewing real, saved data from a connected database."
+              ? 'Sample data is active right now; live records are stored with Netlify Database.'
+              : 'Live records are stored with Netlify Database.'
           }
         >
           <p>
-            Sample mode is great for trying things out — nothing you do here is saved permanently.
-            Connecting a real database is a one-time setup step your developer can turn on when
-            you're ready to keep real records.
+            Sample mode is great for trying things out; records reset between restarts. With live
+            data enabled, records are saved in Netlify Database.
           </p>
         </InfoCard>
 
@@ -78,8 +65,8 @@ function AboutPage() {
           }
         >
           <p>
-            When your developer turns on Identity, people will need an account to use this app, and you
-            can control what each person is allowed to do.
+            Netlify Identity handles accounts and sign-in, and roles control what each person is
+            allowed to do.
           </p>
         </InfoCard>
 

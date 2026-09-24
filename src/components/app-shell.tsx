@@ -5,7 +5,7 @@ import { appConfig } from '@/config/app'
 import { useAppContext } from '@/server/context'
 import { ModeToggle } from '@/components/mode-toggle'
 import { LogoutButton } from '@/auth/client'
-import { Badge, Button, Card, CardContent } from 'app-packs-ui'
+import { Badge } from 'app-packs-ui'
 import { cn } from '@/lib/utils'
 
 /**
@@ -72,33 +72,25 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </header>
 
-      <main className={cn('mx-auto w-full max-w-6xl flex-1 px-4 py-8 pb-36')}>{children}</main>
-      <NetlifyDeployCard />
+      <main className={cn('mx-auto w-full max-w-6xl flex-1 px-4 py-8 pb-24')}>{children}</main>
+      <NetlifyDeployCard href="https://app.netlify.com/drop" />
     </div>
   )
 }
 
-function NetlifyDeployCard() {
+function NetlifyDeployCard({ href }: { href: string }) {
   return (
-    <Card className="fixed right-4 bottom-4 z-50 w-[calc(100vw-2rem)] max-w-xs shadow-lg backdrop-blur supports-[backdrop-filter]:bg-card/95">
-      <CardContent className="flex items-center gap-3">
-        <img src="/netlify-logo-lightmode.svg" alt="Netlify" className="h-5 w-auto shrink-0 dark:hidden" />
-        <img
-          src="/netlify-logo-darkmode.svg"
-          alt="Netlify"
-          className="hidden h-5 w-auto shrink-0 dark:block"
-        />
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium">Deploy to Netlify</p>
-          <p className="text-xs text-muted-foreground">No GitHub required.</p>
-        </div>
-        <Button asChild size="small">
-          <a href="https://app.netlify.com/drop" target="_blank" rel="noreferrer">
-            Deploy
-            <ExternalLink className="size-3.5" />
-          </a>
-        </Button>
-      </CardContent>
-    </Card>
+    <a
+      href={href}
+      target="_blank"
+      rel="noreferrer"
+      className="fixed right-4 bottom-4 z-50 inline-flex min-h-11 max-w-[calc(100vw-2rem)] items-center gap-3 rounded-full border border-[#24434b] bg-[#0b2930] px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-black/15 transition hover:-translate-y-0.5 hover:bg-[#103740] focus-visible:ring-2 focus-visible:ring-[#32e6e2] focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
+      style={{ fontFamily: "'Figtree', sans-serif" }}
+      aria-label="Make this app yours on Netlify"
+    >
+      <img src="/netlify-monogram-darkmode.svg" alt="" className="size-4 shrink-0" />
+      <span className="whitespace-nowrap">Make this app yours</span>
+      <ExternalLink className="size-4 shrink-0 text-[#32e6e2]" aria-hidden="true" />
+    </a>
   )
 }
