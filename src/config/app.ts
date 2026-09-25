@@ -47,7 +47,7 @@ export const appConfig = {
   // `/api/files/:key` (see `netlify/functions/upload.mts` /
   // `netlify/functions/files.mts`). Defaults to `[]` ("not configured
   // yet"), which makes both endpoints fail-closed with 403 even when
-  // `AUTH_ENABLED=true` — these endpoints touch real Netlify Blobs storage,
+  // Netlify Identity auth is enabled — these endpoints touch real Netlify Blobs storage,
   // so they never fall back to a guessed role like `adminRole`. Set this to
   // your vertical's own attachment roles, e.g. `['admin', 'recruiter']`.
   // See README > Uploads.

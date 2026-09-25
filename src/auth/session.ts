@@ -6,13 +6,15 @@ export type SessionUser = User
 /**
  * Resolves the current session user. Three explicit branches:
  *
- * 1. Auth is off (`AUTH_ENABLED` unset/false) -> always `null`. The rest of
- *    the app treats a `null` user as "no auth required", not "logged out".
+ * 1. Auth is off (Identity is not enabled for the linked Netlify project) ->
+ *    always `null`. The rest of the app treats a `null` user as "no auth
+ *    required", not "logged out".
  * 2. Local dev override -> when running under `netlify dev` (so
  *    `NETLIFY_DEV === 'true'`) and `AUTH_DEV_USER` is set to a JSON blob
- *    like `{"email":"you@example.com","roles":["admin"]}`, that fake user is
- *    used. This exists because `@netlify/identity` does not work locally
- *    (there is no real Identity endpoint to talk to outside a deploy).
+ *    like `{"email":"you@example.com","roles":["admin"]}`, auth turns on
+ *    and that fake user is used. This exists because `@netlify/identity`
+ *    does not work locally (there is no real Identity endpoint to talk to
+ *    outside a deploy).
  * 3. Otherwise -> defer to `@netlify/identity`'s isomorphic `getUser()`,
  *    which reads the `nf_jwt` cookie from the incoming request and returns
  *    an already-normalized `{ id, email, name, roles, ... }` object (or

@@ -14,7 +14,7 @@ async function uploadFile(file: File): Promise<UploadResult> {
     const payload = await res.json().catch(() => null)
     if (res.status === 403 && payload?.error === 'not_configured') {
       throw new Error(
-        'Uploads are disabled: this deployment needs AUTH_ENABLED=true and an ' +
+        'Uploads are disabled: this deployment needs Netlify Identity enabled and an ' +
           'uploadAllowedRoles list configured (see README > Uploads) before files can be uploaded.',
       )
     }

@@ -6,15 +6,16 @@ apps. Read this before making changes.
 - **Runs in demo mode by default.** `npm install && npm run dev` — no
   database, no auth, no env vars needed. Data lives in memory
   (`src/data/*.ts`) and resets on cold start.
-- **One flag controls each toggle**: `DEMO_MODE` (data source), `AUTH_ENABLED`
-  (real auth), `DEFAULT_ROLE` (role assigned at signup, required once
-  signups are enabled), `ALLOWED_SIGNUP_DOMAIN` (optional — restricts
-  signups to one exact email domain, no subdomains), and
+- **One flag controls each non-auth toggle**: `DEMO_MODE` (data source),
+  `DEFAULT_ROLE` (role assigned at signup, required once signups are
+  enabled), `ALLOWED_SIGNUP_DOMAIN` (optional — restricts signups to one
+  exact email domain, no subdomains), and
   `PURGE_ENABLED`/`RECORD_RETENTION_DAYS` (hard purge of soft-deleted
   records — off by default, `RECORD_RETENTION_DAYS` required once
-  `PURGE_ENABLED=true`). All live in `src/config/flags.ts` — read
-  `process.env` only inside those functions, never at module scope, never
-  anywhere else.
+  `PURGE_ENABLED=true`). Auth is detected from Netlify Identity being enabled
+  for the linked project; local auth uses `AUTH_DEV_USER` under `netlify dev`.
+  All env-backed helpers live in `src/config/flags.ts` — read `process.env`
+  only inside those functions, never at module scope, never anywhere else.
 - **Branding lives in one file**: `src/config/app.ts`. If you're asked to
   rebrand the app, that's the only file that should change (plus swapping
   `/public/logo.svg`).
@@ -49,14 +50,14 @@ apps. Read this before making changes.
   the reference pattern and README > Audit logging.
 - **Uploads fail closed until configured**: `netlify/functions/upload.mts`
   and `netlify/functions/files.mts` (`/api/upload`, `/api/files/:key`) 403
-  unconditionally unless `AUTH_ENABLED=true` **and**
+  unconditionally unless Netlify Identity auth is enabled **and**
   `appConfig.uploadAllowedRoles` (`src/config/app.ts`, defaults to `[]`) is a
   non-empty list of roles allowed to upload/download — set it explicitly
   before relying on these endpoints. See README > Uploads.
 - **Auth UI covers login, signup, forgot-password, and invite/recovery
   acceptance**: `src/auth/client.tsx` (`LoginForm`, `ResetPasswordForm`) and
-  `src/routes/login.tsx` / `src/routes/reset-password.tsx`. If `AUTH_ENABLED=true`
-  but Identity itself isn't enabled in the Netlify dashboard,
+  `src/routes/login.tsx` / `src/routes/reset-password.tsx`. If an auth flow is
+  reached but Identity itself isn't enabled in the Netlify dashboard,
   `getSettings()` throws `MissingIdentityError` and `/login` shows an alert
   rather than failing silently on submit.
 - **Full details**: see `README.md` — especially "Extension points" and the

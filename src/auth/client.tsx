@@ -79,21 +79,18 @@ const PROVIDER_LABELS: Record<AuthProvider, string> = {
 }
 
 /**
- * `AUTH_ENABLED=true` only turns on this app's own auth code paths — it
- * doesn't enable Netlify Identity for the site. Shown when `getSettings()`
- * throws `MissingIdentityError`, so a team that set the env var but forgot
- * the dashboard step gets a clear, upfront reason every submit will fail,
- * instead of a generic error surfacing deep in a login/signup attempt.
+ * Shown when `getSettings()` throws `MissingIdentityError`, so a team gets
+ * a clear, upfront reason every submit will fail instead of a generic error
+ * surfacing deep in a login/signup attempt.
  */
 function IdentityUnavailableAlert() {
   return (
     <Alert variant="destructive">
       <AlertTitle>Identity isn't enabled for this site yet</AlertTitle>
       <AlertDescription>
-        <code>AUTH_ENABLED=true</code> is set, but Netlify Identity itself is
-        still off — no one can log in, sign up, or reset a password until
-        it's turned on. In the Netlify dashboard: Site configuration →
-        Identity → Enable Identity. See{' '}
+        Netlify Identity itself is off - no one can log in, sign up, or reset
+        a password until it's turned on. In the Netlify dashboard: Site
+        configuration - Identity - Enable Identity. See{' '}
         <a
           href="https://docs.netlify.com/manage/security/secure-access-to-sites/identity/get-started/#enable-identity"
           target="_blank"
@@ -112,13 +109,9 @@ export function LoginForm() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [settings, setSettings] = useState<Settings | null>(null)
-  // AUTH_ENABLED=true only turns on this app's own auth code paths — it
-  // doesn't mean Identity is actually toggled on for the site in the
-  // Netlify dashboard. getSettings() is the cheapest call that tells us
-  // which one we're in: MissingIdentityError means the dashboard toggle is
-  // still off, so every login/signup/reset attempt would otherwise fail
-  // silently-ish (a generic error deep in a submit handler) instead of a
-  // clear, upfront reminder.
+  // getSettings() is the cheapest call that confirms the dashboard toggle is
+  // actually on; MissingIdentityError means every login/signup/reset attempt
+  // would otherwise fail with a generic submit error.
   const [identityUnavailable, setIdentityUnavailable] = useState(false)
 
   useEffect(() => {

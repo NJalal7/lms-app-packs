@@ -1,3 +1,5 @@
+import { getIdentityConfig } from '@netlify/identity'
+
 /**
  * Server-only feature flag helpers.
  *
@@ -30,7 +32,11 @@ export function isDemoMode(): boolean {
 }
 
 export function isAuthEnabled(): boolean {
-  return process.env.AUTH_ENABLED === 'true'
+  if (process.env.NETLIFY_DEV === 'true' && process.env.AUTH_DEV_USER) {
+    return true
+  }
+
+  return getIdentityConfig() != null
 }
 
 /**

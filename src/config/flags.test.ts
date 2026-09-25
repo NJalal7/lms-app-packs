@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import {
   isDemoMode,
   isAuthEnabled,
@@ -7,6 +7,14 @@ import {
   isPurgeEnabled,
   getRetentionDays,
 } from './flags'
+
+const { mockGetIdentityConfig } = vi.hoisted(() => ({
+  mockGetIdentityConfig: vi.fn(),
+}))
+
+vi.mock('@netlify/identity', () => ({
+  getIdentityConfig: mockGetIdentityConfig,
+}))
 
 describe('isDemoMode', () => {
   const original = { ...process.env }
@@ -40,20 +48,35 @@ describe('isDemoMode', () => {
 })
 
 describe('isAuthEnabled', () => {
+  const original = { ...process.env }
+
   beforeEach(() => {
-    delete process.env.AUTH_ENABLED
+    process.env = { ...original }
+    delete process.env.NETLIFY_DEV
+    delete process.env.AUTH_DEV_USER
+    mockGetIdentityConfig.mockReturnValue(null)
   })
 
-  it('is false by default', () => {
+  afterEach(() => {
+    process.env = { ...original }
+    mockGetIdentityConfig.mockReset()
+  })
+
+  it('is false when Identity is not configured', () => {
     expect(isAuthEnabled()).toBe(false)
   })
 
-  it('is true only when AUTH_ENABLED is exactly "true"', () => {
-    process.env.AUTH_ENABLED = 'true'
+  it('is true when Netlify Identity config is available', () => {
+    mockGetIdentityConfig.mockReturnValue({ url: 'https://example.netlify.app/.netlify/identity' })
+
     expect(isAuthEnabled()).toBe(true)
+  })
 
-    process.env.AUTH_ENABLED = 'yes'
-    expect(isAuthEnabled()).toBe(false)
+  it('turns on under netlify dev when a fake auth user is configured', () => {
+    process.env.NETLIFY_DEV = 'true'
+    process.env.AUTH_DEV_USER = '{"email":"you@example.com","roles":["admin"]}'
+
+    expect(isAuthEnabled()).toBe(true)
   })
 })
 

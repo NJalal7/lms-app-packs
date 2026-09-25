@@ -2,9 +2,10 @@
 
 A TanStack Start + shadcn/ui application starter that deploys to Netlify in one
 command, runs in **demo mode** by default (in-memory data, no database or auth
-required), and exposes a single `AUTH_ENABLED` flag to turn on real
-authentication. Built to be forked by HR, Finance, and other internal teams —
-and by AI coding agents working on their behalf.
+required), and turns on real authentication automatically when Netlify
+Identity is enabled for the deployed project. Built to be forked by HR,
+Finance, and other internal teams — and by AI coding agents working on their
+behalf.
 
 ## Quick start
 
@@ -66,9 +67,8 @@ vertical — full detail is in the linked section, this is just orientation.
 | Variable                                                 | Default               | Purpose                                                                                                                                                                        |
 | -------------------------------------------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `DEMO_MODE`                                              | `true` (unset = true) | `false` switches every data read/write to the real Postgres database. See "Swap demo data" below.                                                                              |
-| `AUTH_ENABLED`                                           | `false`               | `true` turns on Netlify Identity, route guards, and audit logging. See "Flip the auth toggle" below.                                                                           |
 | `NETLIFY_DB_URL`                                         | —                     | Set automatically by `@netlify/database` / `netlify database init`. Don't set by hand.                                                                                         |
-| `AUTH_DEV_USER`                                          | —                     | Local-dev-only fake session, e.g. `{"email":"you@example.com","roles":["admin"]}`. Only honored when `AUTH_ENABLED=true` and running under `netlify dev` (`NETLIFY_DEV=true`). |
+| `AUTH_DEV_USER`                                          | —                     | Local-dev-only fake session, e.g. `{"email":"you@example.com","roles":["admin"]}`. Turns auth on only when running under `netlify dev` (`NETLIFY_DEV=true`).                  |
 | `DEFAULT_ROLE`                                           | —                     | Required once signups are enabled — the role assigned to new users at signup. See "Roles" below. No default; signups fail loudly until this is set.                          |
 | `ALLOWED_SIGNUP_DOMAIN`                                  | —                     | Optional — restricts signups to one exact email domain (no subdomains). Unset means no restriction. See "Roles" below.                                                         |
 | `PURGE_ENABLED`                                          | `false`               | `true` turns on permanent deletion of already soft-deleted records. Off is genuinely inert — no purge job runs. See "Soft delete" below.                                       |
@@ -85,14 +85,15 @@ See `.env.example` for a copy-pasteable starting point.
 > demo mode; the app never infers it from whether `NETLIFY_DB_URL` happens to
 > be set.
 
-## Flip the auth toggle
+## Enable auth
 
 The app ships with auth **off**. To turn it on:
 
 1. In the Netlify dashboard, enable Identity for your site (Site
    configuration → Identity → Enable Identity) — see
    [Netlify's Identity setup guide](https://docs.netlify.com/manage/security/secure-access-to-sites/identity/get-started/#enable-identity).
-2. Set `AUTH_ENABLED=true` as a site environment variable and redeploy.
+2. Redeploy the site. The app detects the project's Identity configuration
+   automatically; there is no auth env var to set.
 3. Invite users from the Identity tab, or let them sign up at `/login` (if
    signups are enabled in your Identity settings).
 4. Set `DEFAULT_ROLE` (e.g. `member`) as a site environment variable —
@@ -120,11 +121,11 @@ With auth on:
   `/admin/audit`. Read-level logging exists too, but is opt-in per call
   site — see "Audit logging" below.
 
-**If `AUTH_ENABLED=true` but step 1 above was skipped** (Identity not
-actually enabled for the site), `/login` shows a persistent alert instead of
-failing silently through a generic error on submit — `LoginForm` detects
-this via `getSettings()` throwing `MissingIdentityError` and tells the
-visitor exactly what's missing and where to fix it.
+If Identity is unavailable but an auth flow is reached, `/login` shows a
+persistent alert instead of failing silently through a generic error on
+submit — `LoginForm` detects this via `getSettings()` throwing
+`MissingIdentityError` and tells the visitor exactly what's missing and where
+to fix it.
 
 **Local development:** `@netlify/identity` only works against a real Netlify
 deploy — there's no local Identity emulator. To develop with auth on locally,
@@ -181,7 +182,7 @@ Identity dashboard's "Roles" field writes, and what `netlify.toml`'s
 - `requireRole(allowedRoles: string[])`, from `src/auth/server.ts` — for
   TanStack Start route loaders and server functions. Throws a 403 error
   (rendered via the route's `errorComponent`) if the session's roles don't
-  intersect `allowedRoles`; no-op when `AUTH_ENABLED` is off. Example:
+  intersect `allowedRoles`; no-op when Identity auth is off. Example:
   `requireRole(['admin', 'editor'])`.
 - `checkRole(allowedRoles: string[])`, from `src/auth/session.ts` — for raw
   Netlify Functions, which have no router to catch a thrown error. Returns
@@ -219,7 +220,7 @@ entityId, before?, after?)`, from `src/auth/server.ts`, writes an entry
 (actor, action, before/after) for every create/update/delete. It's already
 called from the three `src/server/records.ts` server functions
 (`record.created`/`record.updated`/`record.deleted`) — copy that call
-pattern for any new entity's mutations. No-ops when `AUTH_ENABLED` is off.
+pattern for any new entity's mutations. No-ops when Identity auth is off.
 
 **Reads are opt-in, per call site:** `auditRead(action, entity, entityId)`,
 also from `src/auth/server.ts`, is the read counterpart — same persistence
@@ -354,8 +355,8 @@ Blobs storage, so unlike the rest of the app they never treat "auth off" as
 "open to everyone." Both apply the same three guards, in order, before doing
 anything else:
 
-1. `AUTH_ENABLED` must be `true` — if it isn't, every request gets `403`,
-   even in demo mode.
+1. Netlify Identity must be enabled for the project — if it isn't, every
+   request gets `403`, even in demo mode.
 2. `appConfig.uploadAllowedRoles` (`src/config/app.ts`) must be a non-empty
    array — it defaults to `[]`, so every request gets `403` until you set it
    to your vertical's own attachment roles, e.g. `['admin', 'recruiter']`.
@@ -397,7 +398,7 @@ store the returned `{ key, url }` on the record (add a column in
 **Do not touch:**
 
 - `src/config/flags.ts` — flag logic is intentionally centralized; don't
-  read `process.env.DEMO_MODE` / `AUTH_ENABLED` anywhere else.
+  read `process.env.DEMO_MODE` anywhere else.
 - `src/routeTree.gen.ts` — auto-generated by the TanStack Router Vite plugin.
   Never edit by hand.
 - `netlify/database/migrations/` — never edit an already-applied migration
@@ -424,7 +425,7 @@ for the full picture. The short version:
 
 ```
 src/config/app.ts        # branding — the only file you edit to rebrand
-src/config/flags.ts       # DEMO_MODE / AUTH_ENABLED — server-only
+src/config/flags.ts       # DEMO_MODE / Identity detection — server-only
 src/db/schema.ts          # Drizzle schema (source of truth for the DB shape)
 src/db/soft-delete.ts      # deletedAt column mixin + shared query filter helpers
 src/data/                 # one file per entity, demo/DB branches inside

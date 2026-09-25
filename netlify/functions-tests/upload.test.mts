@@ -11,9 +11,10 @@
 // own "function" and fail the build on this file's top-level `await`.
 import { describe, it, expect, afterEach, vi } from 'vitest'
 
-const { mockRoles, mockGetUser, mockStore } = vi.hoisted(() => ({
+const { mockRoles, mockGetUser, mockGetIdentityConfig, mockStore } = vi.hoisted(() => ({
   mockRoles: { current: [] as string[] },
   mockGetUser: vi.fn(),
+  mockGetIdentityConfig: vi.fn((): unknown => null),
   mockStore: { set: vi.fn() },
 }))
 
@@ -28,6 +29,7 @@ vi.mock('../../src/config/app', () => ({
 
 vi.mock('@netlify/identity', () => ({
   getUser: mockGetUser,
+  getIdentityConfig: mockGetIdentityConfig,
 }))
 
 vi.mock('@netlify/blobs', () => ({
@@ -49,11 +51,12 @@ describe('upload function authorization', () => {
     process.env = { ...originalEnv }
     mockRoles.current = []
     mockGetUser.mockReset()
+    mockGetIdentityConfig.mockReset()
+    mockGetIdentityConfig.mockReturnValue(null)
     mockStore.set.mockReset()
   })
 
-  it('403s when AUTH_ENABLED is not true, even if uploadAllowedRoles is configured', async () => {
-    delete process.env.AUTH_ENABLED
+  it('403s when Identity is not configured, even if uploadAllowedRoles is configured', async () => {
     mockRoles.current = ['admin']
 
     const res = await handler(uploadRequest())
@@ -62,8 +65,8 @@ describe('upload function authorization', () => {
     expect(mockStore.set).not.toHaveBeenCalled()
   })
 
-  it('403s when AUTH_ENABLED=true but uploadAllowedRoles is empty', async () => {
-    process.env.AUTH_ENABLED = 'true'
+  it('403s when Identity is configured but uploadAllowedRoles is empty', async () => {
+    mockGetIdentityConfig.mockReturnValue({ url: 'https://example.netlify.app/.netlify/identity' })
     mockRoles.current = []
     mockGetUser.mockResolvedValue({ id: '1', email: 'user@example.com', roles: ['admin'] })
 
@@ -74,7 +77,7 @@ describe('upload function authorization', () => {
   })
 
   it('403s when the authenticated user has none of the allowed roles', async () => {
-    process.env.AUTH_ENABLED = 'true'
+    mockGetIdentityConfig.mockReturnValue({ url: 'https://example.netlify.app/.netlify/identity' })
     mockRoles.current = ['admin', 'recruiter']
     mockGetUser.mockResolvedValue({ id: '1', email: 'user@example.com', roles: ['viewer'] })
 
@@ -84,8 +87,8 @@ describe('upload function authorization', () => {
     expect(mockStore.set).not.toHaveBeenCalled()
   })
 
-  it('401s when AUTH_ENABLED=true, roles are configured, but there is no session', async () => {
-    process.env.AUTH_ENABLED = 'true'
+  it('401s when Identity is configured, roles are configured, but there is no session', async () => {
+    mockGetIdentityConfig.mockReturnValue({ url: 'https://example.netlify.app/.netlify/identity' })
     mockRoles.current = ['admin']
     mockGetUser.mockResolvedValue(null)
 
@@ -96,7 +99,7 @@ describe('upload function authorization', () => {
   })
 
   it('proceeds to store the file when the user has an allowed role', async () => {
-    process.env.AUTH_ENABLED = 'true'
+    mockGetIdentityConfig.mockReturnValue({ url: 'https://example.netlify.app/.netlify/identity' })
     mockRoles.current = ['admin', 'recruiter']
     mockGetUser.mockResolvedValue({ id: '1', email: 'user@example.com', roles: ['recruiter'] })
 

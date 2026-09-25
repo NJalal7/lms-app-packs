@@ -1,18 +1,30 @@
 import { randomUUID } from 'node:crypto'
-import { describe, it, expect, afterEach } from 'vitest'
+import { describe, it, expect, afterEach, vi } from 'vitest'
 import { auditRead } from './server'
 import { listAudit } from '@/data/audit'
 import { listRecords, getRecord } from '@/data/records'
+
+const { mockGetIdentityConfig, mockGetUser } = vi.hoisted(() => ({
+  mockGetIdentityConfig: vi.fn((): unknown => null),
+  mockGetUser: vi.fn(),
+}))
+
+vi.mock('@netlify/identity', () => ({
+  getIdentityConfig: mockGetIdentityConfig,
+  getUser: mockGetUser,
+}))
 
 describe('auditRead', () => {
   const original = { ...process.env }
 
   afterEach(() => {
     process.env = { ...original }
+    mockGetIdentityConfig.mockReset()
+    mockGetIdentityConfig.mockReturnValue(null)
+    mockGetUser.mockReset()
   })
 
   function enableAuditedSession() {
-    process.env.AUTH_ENABLED = 'true'
     process.env.NETLIFY_DEV = 'true'
     process.env.AUTH_DEV_USER = JSON.stringify({ email: 'tester@example.com', roles: ['admin'] })
   }
@@ -35,8 +47,9 @@ describe('auditRead', () => {
     expect(latest.createdAt).toBeInstanceOf(Date)
   })
 
-  it('is a no-op when AUTH_ENABLED is not true', async () => {
-    delete process.env.AUTH_ENABLED
+  it('is a no-op when auth is not enabled', async () => {
+    delete process.env.NETLIFY_DEV
+    delete process.env.AUTH_DEV_USER
     const before = (await listAudit()).length
 
     await auditRead('employee-record.viewed', 'employee-record', randomUUID())
