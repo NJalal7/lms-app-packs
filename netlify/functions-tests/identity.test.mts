@@ -6,6 +6,11 @@
 // own "function" and fail the build on this file's top-level `await`.
 import { describe, it, expect, afterEach, vi } from 'vitest'
 
+const listUsers = vi.fn()
+vi.mock('@netlify/identity', () => ({
+  admin: { listUsers },
+}))
+
 const { default: identity } = await import('../functions/identity.mjs')
 
 function fakeEvent(email: string | undefined) {
@@ -20,11 +25,13 @@ describe('identity signup hook', () => {
 
   afterEach(() => {
     process.env = { ...original }
+    listUsers.mockReset()
   })
 
-  it('assigns DEFAULT_ROLE when ALLOWED_SIGNUP_DOMAIN is unset', async () => {
+  it('assigns DEFAULT_ROLE when ALLOWED_SIGNUP_DOMAIN is unset and a user already exists', async () => {
     process.env.DEFAULT_ROLE = 'member'
     delete process.env.ALLOWED_SIGNUP_DOMAIN
+    listUsers.mockResolvedValue([{ id: 'existing' }])
     const event = fakeEvent('someone@example.com')
 
     const result = await identity.userSignup(event as never)
@@ -36,6 +43,7 @@ describe('identity signup hook', () => {
   it('allows a signup whose email domain matches ALLOWED_SIGNUP_DOMAIN exactly (case-insensitive)', async () => {
     process.env.DEFAULT_ROLE = 'member'
     process.env.ALLOWED_SIGNUP_DOMAIN = 'acme.com'
+    listUsers.mockResolvedValue([{ id: 'existing' }])
     const event = fakeEvent('someone@Acme.com')
 
     const result = await identity.userSignup(event as never)
@@ -52,6 +60,7 @@ describe('identity signup hook', () => {
     await identity.userSignup(event as never)
 
     expect(event.deny).toHaveBeenCalledTimes(1)
+    expect(listUsers).not.toHaveBeenCalled()
   })
 
   it('denies a subdomain, since matching is exact-domain only', async () => {
@@ -72,5 +81,27 @@ describe('identity signup hook', () => {
     await identity.userSignup(event as never)
 
     expect(event.deny).toHaveBeenCalledTimes(1)
+  })
+
+  it('assigns appConfig.adminRole to the first-ever signup', async () => {
+    process.env.DEFAULT_ROLE = 'member'
+    delete process.env.ALLOWED_SIGNUP_DOMAIN
+    listUsers.mockResolvedValue([])
+    const event = fakeEvent('first@example.com')
+
+    const result = await identity.userSignup(event as never)
+
+    expect(result?.user.appMetadata?.roles).toEqual(['admin'])
+  })
+
+  it('falls back to DEFAULT_ROLE if the admin API call fails', async () => {
+    process.env.DEFAULT_ROLE = 'member'
+    delete process.env.ALLOWED_SIGNUP_DOMAIN
+    listUsers.mockRejectedValue(new Error('identity admin API unreachable'))
+    const event = fakeEvent('someone@example.com')
+
+    const result = await identity.userSignup(event as never)
+
+    expect(result?.user.appMetadata?.roles).toEqual(['member'])
   })
 })

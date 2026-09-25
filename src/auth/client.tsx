@@ -18,6 +18,7 @@ import { Button, Input, Alert, AlertTitle, AlertDescription } from 'app-packs-ui
 import { Field, FieldLabel, FieldError, FieldGroup, FieldDescription } from '@/components/ui/field'
 import { Separator } from '@/components/ui/separator'
 import { useSubmission } from '@/lib/submission'
+import { needsFirstAdminServer } from '@/server/first-user'
 
 /**
  * Runs `handleAuthCallback()` once on mount to process OAuth redirects,
@@ -104,6 +105,22 @@ function IdentityUnavailableAlert() {
   )
 }
 
+/**
+ * Shown on the signup form when nobody has signed up yet — the account this
+ * form creates becomes the site admin automatically (see
+ * `netlify/functions/identity.mts`), so a non-technical deployer knows what
+ * they're about to do instead of discovering it later. Stops appearing the
+ * moment anyone has signed up, since a plain member from then on.
+ */
+function FirstAdminNotice() {
+  return (
+    <Alert variant="accent">
+      <AlertTitle>You'll be the site admin</AlertTitle>
+      <AlertDescription>No one has signed up yet, so this account becomes the admin.</AlertDescription>
+    </Alert>
+  )
+}
+
 export function LoginForm() {
   const [mode, setMode] = useState<'login' | 'signup' | 'forgot'>('login')
   const [email, setEmail] = useState('')
@@ -113,6 +130,7 @@ export function LoginForm() {
   // actually on; MissingIdentityError means every login/signup/reset attempt
   // would otherwise fail with a generic submit error.
   const [identityUnavailable, setIdentityUnavailable] = useState(false)
+  const [needsFirstAdmin, setNeedsFirstAdmin] = useState(false)
 
   useEffect(() => {
     getSettings()
@@ -121,6 +139,12 @@ export function LoginForm() {
         setSettings(null)
         if (err instanceof MissingIdentityError) setIdentityUnavailable(true)
       })
+  }, [])
+
+  useEffect(() => {
+    needsFirstAdminServer()
+      .then(setNeedsFirstAdmin)
+      .catch(() => setNeedsFirstAdmin(false))
   }, [])
 
   const { state, run } = useSubmission(async () => {
@@ -226,6 +250,7 @@ export function LoginForm() {
       </div>
 
       {identityUnavailable ? <IdentityUnavailableAlert /> : null}
+      {mode === 'signup' && needsFirstAdmin && !identityUnavailable ? <FirstAdminNotice /> : null}
 
       <form
         className="space-y-4"

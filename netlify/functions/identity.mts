@@ -1,5 +1,7 @@
 import type { UserSignupHandler } from '@netlify/functions'
 import { getDefaultRole, getAllowedSignupDomain } from '../../src/config/flags'
+import { appConfig } from '../../src/config/app'
+import { hasAnyUsers } from '../../src/auth/first-user'
 
 /**
  * Netlify Identity signup event hook. Assigns `DEFAULT_ROLE` to every new
@@ -8,6 +10,16 @@ import { getDefaultRole, getAllowedSignupDomain } from '../../src/config/flags'
  * dashboard. Also enforces `ALLOWED_SIGNUP_DOMAIN`, if set — see
  * `getAllowedSignupDomain()` (`src/config/flags.ts`) for why that check is
  * optional rather than fail-loud like `DEFAULT_ROLE`.
+ *
+ * The very first successful signup gets `appConfig.adminRole` instead of
+ * `DEFAULT_ROLE` (see `hasAnyUsers()`), so a non-technical person deploying
+ * this template doesn't have to find Identity → Users → Roles in the Netlify
+ * dashboard just to administer their own site. This has two windows worth
+ * knowing about: two people signing up in the same instant could both read
+ * zero existing users and both become admin, and — on open signups — whoever
+ * signs up first (not necessarily the deployer) claims it. README > Roles
+ * tells deployers to sign up immediately after deploying, before sharing the
+ * URL, to close the second window.
  *
  * Role membership always lives in `app_metadata` (never `user_metadata`) —
  * `user_metadata` is user-editable via the Identity API, so a role stored
@@ -19,7 +31,7 @@ import { getDefaultRole, getAllowedSignupDomain } from '../../src/config/flags'
  * fails the signup loudly rather than silently assigning a made-up role
  * name. See README > Roles.
  */
-const userSignup: UserSignupHandler = (event) => {
+const userSignup: UserSignupHandler = async (event) => {
   const allowedDomain = getAllowedSignupDomain()
   if (allowedDomain) {
     const emailDomain = event.user.email?.split('@')[1]?.toLowerCase()
@@ -28,7 +40,17 @@ const userSignup: UserSignupHandler = (event) => {
     }
   }
 
-  const role = getDefaultRole()
+  let alreadyHasUsers: boolean
+  try {
+    alreadyHasUsers = await hasAnyUsers()
+  } catch {
+    // If the admin API call fails for any reason, fail toward the safe
+    // default (a regular member) rather than risk granting admin on a
+    // read we couldn't actually confirm.
+    alreadyHasUsers = true
+  }
+
+  const role = alreadyHasUsers ? getDefaultRole() : appConfig.adminRole
   return {
     user: {
       ...event.user,

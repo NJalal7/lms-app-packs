@@ -48,9 +48,13 @@ is open to anyone with the URL until you enable Identity.
 3. If this app should be private, enable Identity in the Netlify dashboard,
    then redeploy. After that, visitors are sent to `/login` until they sign
    in.
-4. Invite users from the Identity tab. If you allow public signups, set
-   `DEFAULT_ROLE` on the environment variables page before signups go live:
-   `https://app.netlify.com/projects/{sitename}/configuration/env`
+4. Set `DEFAULT_ROLE` on the environment variables page before enabling
+   signups: `https://app.netlify.com/projects/{sitename}/configuration/env`.
+   Then sign up yourself at `/login` right away, **before** sharing the URL
+   with anyone else — the first person to sign up automatically becomes the
+   site admin (see "Roles" below), so signing up first is how you claim that
+   account. After that, invite everyone else from the Identity tab, or leave
+   public signups on if that's what your site needs.
 5. Optional setup lives on that same environment variables page:
    `ALLOWED_SIGNUP_DOMAIN` for signup restrictions,
    `PURGE_ENABLED`/`RECORD_RETENTION_DAYS` for permanent deletion of
@@ -116,13 +120,16 @@ The app ships with auth **off**. To turn it on:
    [Netlify's Identity setup guide](https://docs.netlify.com/manage/security/secure-access-to-sites/identity/get-started/#enable-identity).
 2. Redeploy the site. The app detects the project's Identity configuration
    automatically; there is no auth env var to set.
-3. Invite users from the Identity tab, or let them sign up at `/login` (if
-   signups are enabled in your Identity settings).
-4. Set `DEFAULT_ROLE` (e.g. `member`) as a site environment variable —
+3. Set `DEFAULT_ROLE` (e.g. `member`) as a site environment variable —
    `netlify/functions/identity.mts` assigns it to every new signup's
-   `app_metadata.roles`. Signups fail loudly until this is set. Promote
-   specific users beyond the default role from the Identity tab (`roles`
-   land in `app_metadata.roles`, never `user_metadata` — see "Roles" below).
+   `app_metadata.roles`. Signups fail loudly until this is set.
+4. Sign up yourself at `/login` before inviting anyone else — the very first
+   signup automatically becomes the admin instead of getting `DEFAULT_ROLE`
+   (see "Roles" below). After that, invite users from the Identity tab, or
+   let them sign up directly if signups are enabled in your Identity
+   settings. Promote specific users beyond the default role from the
+   Identity tab (`roles` land in `app_metadata.roles`, never
+   `user_metadata` — see "Roles" below).
 
 With auth on:
 
@@ -133,8 +140,9 @@ With auth on:
   Recovery finishes with `updateUser({ password })`; invites finish with
   `acceptInvite(token, password)`. See `src/auth/client.tsx`'s
   `useAuthCallback`/`ResetPasswordForm` for how the two flows are told apart.
-- Every new signup gets `DEFAULT_ROLE` in `app_metadata.roles` automatically
-  (see "Roles" below) — no manual dashboard step required for the common case.
+- Every new signup gets `DEFAULT_ROLE` in `app_metadata.roles` automatically,
+  except the very first, which becomes the admin (see "Roles" below) — no
+  manual dashboard step required for the common case.
 - Every route under `/records` and `/admin` redirects anonymous visitors to
   `/login` — but the **real** authorization boundary is `requireUser()` /
   `requireRole()` inside each server function (`src/server/*.ts`), which runs
@@ -185,6 +193,20 @@ Identity dashboard's "Roles" field writes, and what `netlify.toml`'s
   variables" above) to every new user's `app_metadata.roles` automatically.
   Identity event hooks only fire against a real deploy with Identity
   enabled — not under `netlify dev`.
+- **The first signup becomes the admin**: the same hook checks
+  `hasAnyUsers()` (`src/auth/first-user.ts`, backed by the Identity admin
+  API's `listUsers()`) and assigns `appConfig.adminRole` instead of
+  `DEFAULT_ROLE` when nobody has signed up yet. This exists so a
+  non-technical person deploying the template can administer their own site
+  without ever opening the Identity dashboard. It has a race window (two
+  people signing up in the same instant could both become admin) and, on
+  open signups, a land-grab window (whoever signs up first — not necessarily
+  the deployer — claims it) — see "After deploying to your account" above
+  for closing the second one by signing up immediately. If the `listUsers()`
+  check itself fails, the hook falls back to `DEFAULT_ROLE` rather than risk
+  granting admin on an unconfirmed read. `/login`'s signup form shows a
+  "you'll be the site admin" notice while this condition holds (see
+  `src/server/first-user.ts` / `src/auth/client.tsx`).
 - **Restricting who can sign up**: the same hook optionally enforces
   `ALLOWED_SIGNUP_DOMAIN` — set it to one exact email domain (e.g.
   `acme.com`) and any signup whose email domain doesn't match exactly (no
@@ -194,10 +216,10 @@ Identity dashboard's "Roles" field writes, and what `netlify.toml`'s
   so it can't force every deployment to configure it. Unset (the default)
   means no restriction — correct for invite-only setups, where every
   signup already comes from a trusted invite rather than open self-signup.
-- **Beyond the default**: promote specific users to additional roles from
-  the Identity tab in the Netlify dashboard (Users → select a user → edit
-  their Roles). There is no in-app role-management UI by design — this is
-  base-layer infrastructure, not a vertical feature.
+- **Beyond the first admin and the default**: promote specific users to
+  additional roles from the Identity tab in the Netlify dashboard (Users →
+  select a user → edit their Roles). There is no in-app role-management UI
+  by design — this is base-layer infrastructure, not a vertical feature.
 
 **Checking roles:**
 
