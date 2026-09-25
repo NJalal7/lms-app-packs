@@ -1,11 +1,11 @@
 # App Pack Starter
 
 A TanStack Start + shadcn/ui application starter that deploys to Netlify in one
-command, runs in **demo mode** by default (in-memory data, no database or auth
-required), and turns on real authentication automatically when Netlify
-Identity is enabled for the deployed project. Built to be forked by HR,
-Finance, and other internal teams — and by AI coding agents working on their
-behalf.
+command, runs in **demo mode** locally and on the canonical public demo
+project (in-memory data, no database or auth required), and turns on real
+authentication automatically when Netlify Identity is enabled for a deployed
+project. Built to be forked by HR, Finance, and other internal teams — and by
+AI coding agents working on their behalf.
 
 ## Quick start
 
@@ -15,8 +15,8 @@ npm run dev
 ```
 
 Open http://localhost:3000. You're in demo mode: the dashboard, records table,
-and forms all work against an in-memory dataset that resets on every cold
-start. Nothing to configure.
+and forms all work against an in-memory dataset with a built-in demo user.
+Data resets on every cold start. Nothing to configure.
 
 ## One-command deploy
 
@@ -30,8 +30,31 @@ Or click:
 [![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy)
 
 The build (`npm run build`) and publish directory (`dist/client`) are already
-configured in `netlify.toml`. No further setup is required to get the app
-live in demo mode.
+configured in `netlify.toml`. The canonical `app-pack-template` project stays
+in demo mode for public evaluation; your own deployed project uses the real
+Netlify Database path automatically.
+
+## After deploying to your account
+
+Your deployed project is no longer the public demo. It uses live data, and it
+is open to anyone with the URL until you enable Identity.
+
+1. Open the Netlify project overview:
+   `https://app.netlify.com/projects/{sitename}`
+2. Confirm Netlify Database is connected under **Data & storage**. The app
+   uses the database automatically; you do not need to set `NETLIFY_DB_URL`
+   by hand. If you connect the database after the first deploy, redeploy the
+   site so migrations run before you add records.
+3. If this app should be private, enable Identity in the Netlify dashboard,
+   then redeploy. After that, visitors are sent to `/login` until they sign
+   in.
+4. Invite users from the Identity tab. If you allow public signups, set
+   `DEFAULT_ROLE` on the environment variables page before signups go live:
+   `https://app.netlify.com/projects/{sitename}/configuration/env`
+5. Optional setup lives on that same environment variables page:
+   `ALLOWED_SIGNUP_DOMAIN` for signup restrictions,
+   `PURGE_ENABLED`/`RECORD_RETENTION_DAYS` for permanent deletion of
+   soft-deleted records, and notification keys for Slack or email.
 
 ## Base template guarantees
 
@@ -64,26 +87,25 @@ vertical — full detail is in the linked section, this is just orientation.
 
 ## Environment variables
 
-| Variable                                                 | Default               | Purpose                                                                                                                                                                        |
-| -------------------------------------------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `DEMO_MODE`                                              | `true` (unset = true) | `false` switches every data read/write to the real Postgres database. See "Swap demo data" below.                                                                              |
-| `NETLIFY_DB_URL`                                         | —                     | Set automatically by `@netlify/database` / `netlify database init`. Don't set by hand.                                                                                         |
-| `AUTH_DEV_USER`                                          | —                     | Local-dev-only fake session, e.g. `{"email":"you@example.com","roles":["admin"]}`. Turns auth on only when running under `netlify dev` (`NETLIFY_DEV=true`).                  |
-| `DEFAULT_ROLE`                                           | —                     | Required once signups are enabled — the role assigned to new users at signup. See "Roles" below. No default; signups fail loudly until this is set.                          |
-| `ALLOWED_SIGNUP_DOMAIN`                                  | —                     | Optional — restricts signups to one exact email domain (no subdomains). Unset means no restriction. See "Roles" below.                                                         |
-| `PURGE_ENABLED`                                          | `false`               | `true` turns on permanent deletion of already soft-deleted records. Off is genuinely inert — no purge job runs. See "Soft delete" below.                                       |
-| `RECORD_RETENTION_DAYS`                                  | —                     | Required once `PURGE_ENABLED=true` — days a soft-deleted record is kept before permanent purge. No default; purge fails loudly until this is set.                             |
-| `SLACK_WEBHOOK_URL`                                      | —                     | Enables the `slack` notify channel.                                                                                                                                            |
-| `RESEND_API_KEY`, `NOTIFY_EMAIL_FROM`, `NOTIFY_EMAIL_TO` | —                     | Enables the `email` notify channel (via [Resend](https://resend.com)).                                                                                                         |
+| Variable                                                 | Default | Purpose                                                                                                                                                      |
+| -------------------------------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `NETLIFY_DB_URL`                                         | —       | Set automatically by `@netlify/database` / `netlify database init`. Don't set by hand.                                                                       |
+| `AUTH_DEV_USER`                                          | —       | Local-dev-only fake session, e.g. `{"email":"you@example.com","roles":["admin"]}`. Turns auth on only when running under `netlify dev` (`NETLIFY_DEV=true`). |
+| `DEFAULT_ROLE`                                           | —       | Required once signups are enabled — the role assigned to new users at signup. See "Roles" below. No default; signups fail loudly until this is set.          |
+| `ALLOWED_SIGNUP_DOMAIN`                                  | —       | Optional — restricts signups to one exact email domain (no subdomains). Unset means no restriction. See "Roles" below.                                       |
+| `PURGE_ENABLED`                                          | `false` | `true` turns on permanent deletion of already soft-deleted records. Off is genuinely inert — no purge job runs. See "Soft delete" below.                     |
+| `RECORD_RETENTION_DAYS`                                  | —       | Required once `PURGE_ENABLED=true` — days a soft-deleted record is kept before permanent purge. No default; purge fails loudly until this is set.            |
+| `SLACK_WEBHOOK_URL`                                      | —       | Enables the `slack` notify channel.                                                                                                                          |
+| `RESEND_API_KEY`, `NOTIFY_EMAIL_FROM`, `NOTIFY_EMAIL_TO` | —       | Enables the `email` notify channel (via [Resend](https://resend.com)).                                                                                       |
 
 See `.env.example` for a copy-pasteable starting point.
 
-> **Note on local dev:** installing `@netlify/database` causes `netlify dev` /
-> `vite dev` to auto-provision a local Postgres database and set
-> `NETLIFY_DB_URL` — even before you've run `netlify database init` or
-> applied a migration. `DEMO_MODE` is therefore the only thing that controls
-> demo mode; the app never infers it from whether `NETLIFY_DB_URL` happens to
-> be set.
+> **Note on demo mode:** demo mode is automatic. Local development and the
+> canonical `app-pack-template` Netlify project use in-memory sample data; any
+> other deployed Netlify project uses the real database path. The app never
+> infers demo mode from whether `NETLIFY_DB_URL` happens to be set, because
+> `@netlify/database` may create that value during local development before
+> migrations have been applied.
 
 ## Enable auth
 
@@ -142,7 +164,7 @@ work against a real deploy.
 
 ## Roles
 
-The base template ships a generic role-checking *mechanism*, not a fixed
+The base template ships a generic role-checking _mechanism_, not a fixed
 role taxonomy — it has no opinion on what role strings your vertical uses
 (`admin`/`respondent`, `hr_admin`/`employee`, etc.), only on how roles are
 stored and checked.
@@ -211,7 +233,7 @@ so every vertical picks its own attachment roles explicitly, e.g.
 
 ## Audit logging
 
-Like Roles, this is a *mechanism*, not a policy — the base template has no
+Like Roles, this is a _mechanism_, not a policy — the base template has no
 opinion on which reads or writes are sensitive enough to log; that judgment
 belongs to whatever vertical is built on top.
 
@@ -292,7 +314,7 @@ dashboard), you're responsible for defining how that logic interacts with
 `deletedAt`/purge — the base template doesn't assume anything about it.
 
 **Opting `records` out:** `records` ships with soft delete already wired in
-as the *reference* implementation for the mechanism above, not as
+as the _reference_ implementation for the mechanism above, not as
 load-bearing infrastructure you're required to keep. If a vertical
 genuinely doesn't want soft delete on `records`, revert these three touch
 points:
@@ -307,16 +329,13 @@ points:
    `purgeExpiredRecords` and `netlify/functions/purge-deleted-records.mts`
    along with it — a hard-delete-only entity has nothing left to purge.
 
-## Swap demo data for Netlify Database
+## Use Netlify Database
 
 1. `netlify database init` — provisions a database and scaffolds Drizzle if
    you haven't already (this repo already has schema + migrations).
 2. Deploy. Netlify applies every migration in
    `netlify/database/migrations/` before the deploy goes live.
-3. Set `DEMO_MODE=false` and redeploy (or restart `netlify dev` locally,
-   which auto-provisions a local database the moment `@netlify/database` is
-   installed).
-4. Optionally seed the same data demo mode uses:
+3. Optionally seed the same data demo mode uses:
    ```bash
    npm run db:seed
    ```
@@ -398,7 +417,7 @@ store the returned `{ key, url }` on the record (add a column in
 **Do not touch:**
 
 - `src/config/flags.ts` — flag logic is intentionally centralized; don't
-  read `process.env.DEMO_MODE` anywhere else.
+  read Netlify site/auth environment variables anywhere else.
 - `src/routeTree.gen.ts` — auto-generated by the TanStack Router Vite plugin.
   Never edit by hand.
 - `netlify/database/migrations/` — never edit an already-applied migration
@@ -413,9 +432,9 @@ npm test
 npm run format
 ```
 
-Tests run with `DEMO_MODE=true` (see `vitest.config.ts`) and cover the demo
-data layer, flag parsing, the submission state machine, and notify's input
-validation.
+Tests run with no Netlify site metadata, which keeps the data layer in demo
+mode. They cover the demo data layer, flag parsing, the submission state
+machine, and notify's input validation.
 
 ## Project layout
 
@@ -425,7 +444,7 @@ for the full picture. The short version:
 
 ```
 src/config/app.ts        # branding — the only file you edit to rebrand
-src/config/flags.ts       # DEMO_MODE / Identity detection — server-only
+src/config/flags.ts       # Demo mode / Identity detection — server-only
 src/db/schema.ts          # Drizzle schema (source of truth for the DB shape)
 src/db/soft-delete.ts      # deletedAt column mixin + shared query filter helpers
 src/data/                 # one file per entity, demo/DB branches inside

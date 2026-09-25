@@ -40,6 +40,11 @@ function downloadRequest(key: string) {
   return handler(req, context)
 }
 
+function mockDeployedSite() {
+  process.env.SITE_ID = 'user-site-id'
+  process.env.SITE_NAME = 'user-site'
+}
+
 describe('files function authorization', () => {
   const originalEnv = { ...process.env }
 
@@ -62,6 +67,7 @@ describe('files function authorization', () => {
   })
 
   it('403s when Identity is configured but uploadAllowedRoles is empty', async () => {
+    mockDeployedSite()
     mockGetIdentityConfig.mockReturnValue({ url: 'https://example.netlify.app/.netlify/identity' })
     mockRoles.current = []
     mockGetUser.mockResolvedValue({ id: '1', email: 'user@example.com', roles: ['admin'] })
@@ -73,6 +79,7 @@ describe('files function authorization', () => {
   })
 
   it('403s when the authenticated user has none of the allowed roles', async () => {
+    mockDeployedSite()
     mockGetIdentityConfig.mockReturnValue({ url: 'https://example.netlify.app/.netlify/identity' })
     mockRoles.current = ['admin', 'recruiter']
     mockGetUser.mockResolvedValue({ id: '1', email: 'user@example.com', roles: ['viewer'] })
@@ -84,6 +91,7 @@ describe('files function authorization', () => {
   })
 
   it('proceeds to read from Blobs when the user has an allowed role', async () => {
+    mockDeployedSite()
     mockGetIdentityConfig.mockReturnValue({ url: 'https://example.netlify.app/.netlify/identity' })
     mockRoles.current = ['admin', 'recruiter']
     mockGetUser.mockResolvedValue({ id: '1', email: 'user@example.com', roles: ['recruiter'] })

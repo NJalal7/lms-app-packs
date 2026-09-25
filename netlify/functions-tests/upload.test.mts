@@ -44,6 +44,11 @@ function uploadRequest() {
   return new Request('http://localhost/api/upload', { method: 'POST', body })
 }
 
+function mockDeployedSite() {
+  process.env.SITE_ID = 'user-site-id'
+  process.env.SITE_NAME = 'user-site'
+}
+
 describe('upload function authorization', () => {
   const originalEnv = { ...process.env }
 
@@ -66,6 +71,7 @@ describe('upload function authorization', () => {
   })
 
   it('403s when Identity is configured but uploadAllowedRoles is empty', async () => {
+    mockDeployedSite()
     mockGetIdentityConfig.mockReturnValue({ url: 'https://example.netlify.app/.netlify/identity' })
     mockRoles.current = []
     mockGetUser.mockResolvedValue({ id: '1', email: 'user@example.com', roles: ['admin'] })
@@ -77,6 +83,7 @@ describe('upload function authorization', () => {
   })
 
   it('403s when the authenticated user has none of the allowed roles', async () => {
+    mockDeployedSite()
     mockGetIdentityConfig.mockReturnValue({ url: 'https://example.netlify.app/.netlify/identity' })
     mockRoles.current = ['admin', 'recruiter']
     mockGetUser.mockResolvedValue({ id: '1', email: 'user@example.com', roles: ['viewer'] })
@@ -88,6 +95,7 @@ describe('upload function authorization', () => {
   })
 
   it('401s when Identity is configured, roles are configured, but there is no session', async () => {
+    mockDeployedSite()
     mockGetIdentityConfig.mockReturnValue({ url: 'https://example.netlify.app/.netlify/identity' })
     mockRoles.current = ['admin']
     mockGetUser.mockResolvedValue(null)
@@ -99,6 +107,7 @@ describe('upload function authorization', () => {
   })
 
   it('proceeds to store the file when the user has an allowed role', async () => {
+    mockDeployedSite()
     mockGetIdentityConfig.mockReturnValue({ url: 'https://example.netlify.app/.netlify/identity' })
     mockRoles.current = ['admin', 'recruiter']
     mockGetUser.mockResolvedValue({ id: '1', email: 'user@example.com', roles: ['recruiter'] })

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 
-// DEMO_MODE=true is set globally in vitest.config.ts, so data/records.ts
-// always takes the in-memory branch here — no database needed for tests.
+// Tests run without Netlify site metadata, so data/records.ts takes the
+// in-memory branch here — no database needed.
 import { listRecords, getRecord, createRecord, updateRecord, deleteRecord } from './records'
 import { seedRecords } from './demo/seed'
 

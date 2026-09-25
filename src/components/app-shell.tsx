@@ -35,7 +35,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 {item.label}
               </Link>
             ))}
-            {authEnabled && user?.roles?.includes(appConfig.adminRole)
+            {user?.roles?.includes(appConfig.adminRole)
               ? appConfig.nav.admin.map((item) => (
                   <Link
                     key={item.to}
@@ -56,17 +56,15 @@ export function AppShell({ children }: { children: ReactNode }) {
               </Badge>
             ) : null}
             <ModeToggle />
-            {authEnabled ? (
-              user ? (
-                <div className="flex items-center gap-2">
-                  <span className="hidden text-sm text-muted-foreground sm:inline">{user.email}</span>
-                  <LogoutButton />
-                </div>
-              ) : (
-                <Link to="/login" className="text-sm font-medium hover:underline">
-                  Log in
-                </Link>
-              )
+            {user ? (
+              <div className="flex items-center gap-2">
+                <span className="hidden text-sm text-muted-foreground sm:inline">{user.email}</span>
+                {authEnabled ? <LogoutButton /> : null}
+              </div>
+            ) : authEnabled ? (
+              <Link to="/login" className="text-sm font-medium hover:underline">
+                Log in
+              </Link>
             ) : null}
           </div>
         </div>

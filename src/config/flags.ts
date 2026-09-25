@@ -1,5 +1,9 @@
 import { getIdentityConfig } from '@netlify/identity'
 
+const officialDemoSiteIds = new Set<string>(['480ddca5-1fd1-4784-b8c7-c889474b8cf9'])
+
+const officialDemoSiteNames = new Set(['app-pack-template'])
+
 /**
  * Server-only feature flag helpers.
  *
@@ -16,24 +20,42 @@ import { getIdentityConfig } from '@netlify/identity'
  */
 
 export function isDemoMode(): boolean {
-  // DEMO_MODE is the sole source of truth, and defaults to true — every
-  // fork of this template starts in demo mode with zero configuration.
+  // Demo mode is automatic:
   //
-  // This deliberately does NOT infer demo mode from whether NETLIFY_DB_URL
-  // is set. @netlify/database auto-provisions a local Postgres database
-  // (and sets NETLIFY_DB_URL) in `netlify dev` / `vite dev` merely because
-  // the package is a dependency — it does this before you've ever run
-  // `netlify database init` or applied a single migration. Inferring demo
-  // mode from that variable would silently flip the app into "real
-  // database" mode against an empty, unmigrated database the first time
-  // anyone runs the dev server. Set DEMO_MODE=false explicitly once you're
-  // ready to point the app at a real, migrated database (see README).
-  return process.env.DEMO_MODE !== 'false'
+  // - Local development stays in demo mode so the template runs with zero
+  //   setup.
+  // - The canonical Netlify demo project stays in demo mode so prospective
+  //   users can explore the app without Identity or a database.
+  // - Every other deployed Netlify project uses the real database path.
+  //
+  // This deliberately does NOT infer demo mode from whether NETLIFY_DB_URL is
+  // set. @netlify/database can auto-provision a local Postgres database (and
+  // set NETLIFY_DB_URL) in dev merely because the package is a dependency,
+  // before you've ever applied a single migration.
+  if (process.env.NETLIFY_DEV === 'true') {
+    return true
+  }
+
+  const siteId = process.env.SITE_ID ?? process.env.NETLIFY_SITE_ID
+  const siteName = process.env.SITE_NAME
+
+  if (!siteId && !siteName) {
+    return true
+  }
+
+  return (
+    (siteId ? officialDemoSiteIds.has(siteId) : false) ||
+    (siteName ? officialDemoSiteNames.has(siteName) : false)
+  )
 }
 
 export function isAuthEnabled(): boolean {
   if (process.env.NETLIFY_DEV === 'true' && process.env.AUTH_DEV_USER) {
     return true
+  }
+
+  if (isDemoMode()) {
+    return false
   }
 
   return getIdentityConfig() != null

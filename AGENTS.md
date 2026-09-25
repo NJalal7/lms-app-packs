@@ -3,14 +3,15 @@
 This is a TanStack Start + shadcn/ui starter, forkable into HR/Finance/etc.
 apps. Read this before making changes.
 
-- **Runs in demo mode by default.** `npm install && npm run dev` — no
-  database, no auth, no env vars needed. Data lives in memory
-  (`src/data/*.ts`) and resets on cold start.
-- **One flag controls each non-auth toggle**: `DEMO_MODE` (data source),
-  `DEFAULT_ROLE` (role assigned at signup, required once signups are
-  enabled), `ALLOWED_SIGNUP_DOMAIN` (optional — restricts signups to one
-  exact email domain, no subdomains), and
-  `PURGE_ENABLED`/`RECORD_RETENTION_DAYS` (hard purge of soft-deleted
+- **Runs in demo mode locally and on the canonical demo project.**
+  `npm install && npm run dev` — no database, no auth, no env vars needed.
+  Data lives in memory (`src/data/*.ts`) and resets on cold start. Deployed
+  forks switch to the real database path automatically based on Netlify's
+  read-only site metadata (`SITE_ID`/`SITE_NAME`).
+- **One flag controls each non-demo toggle**: `DEFAULT_ROLE` (role assigned
+  at signup, required once signups are enabled), `ALLOWED_SIGNUP_DOMAIN`
+  (optional — restricts signups to one exact email domain, no subdomains),
+  and `PURGE_ENABLED`/`RECORD_RETENTION_DAYS` (hard purge of soft-deleted
   records — off by default, `RECORD_RETENTION_DAYS` required once
   `PURGE_ENABLED=true`). Auth is detected from Netlify Identity being enabled
   for the linked project; local auth uses `AUTH_DEV_USER` under `netlify dev`.

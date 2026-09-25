@@ -1,6 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
 import { useRouteContext } from '@tanstack/react-router'
 import { isAuthEnabled, isDemoMode } from '@/config/flags'
+import { appConfig } from '@/config/app'
 import { getSessionUser } from '@/auth/server'
 
 // A deliberately narrow, plain-JSON view of the session user. Router
@@ -34,7 +35,14 @@ export const getAppContext = createServerFn({ method: 'GET' }).handler(async ():
   const sessionUser = authEnabled ? await getSessionUser() : null
   const user: AppContextUser | null = sessionUser
     ? { id: sessionUser.id, email: sessionUser.email, name: sessionUser.name, roles: sessionUser.roles ?? [] }
-    : null
+    : demoMode
+      ? {
+          id: 'demo-user',
+          email: 'demo@example.com',
+          name: 'Demo User',
+          roles: [appConfig.adminRole],
+        }
+      : null
   return { authEnabled, demoMode, user }
 })
 

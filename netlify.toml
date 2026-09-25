@@ -10,7 +10,7 @@
 # and the Netlify Function that serves it automatically at build time.
 
 # --- Role-based redirects (auth) -------------------------------------------
-# Uncomment to gate a path by Identity role once AUTH_ENABLED=true. Netlify
+# Uncomment to gate a path by Identity role once Identity is enabled. Netlify
 # REQUIRES a catch-all fallback redirect whenever you use role-based
 # redirects, or every other route will 404 — the second block below is
 # mandatory, not optional, if you uncomment the first.

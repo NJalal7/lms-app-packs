@@ -19,30 +19,53 @@ vi.mock('@netlify/identity', () => ({
 describe('isDemoMode', () => {
   const original = { ...process.env }
 
+  beforeEach(() => {
+    process.env = { ...original }
+    delete process.env.NETLIFY_DEV
+    delete process.env.SITE_ID
+    delete process.env.NETLIFY_SITE_ID
+    delete process.env.SITE_NAME
+  })
+
   afterEach(() => {
     process.env = { ...original }
   })
 
-  it('is true when DEMO_MODE=true', () => {
-    process.env.DEMO_MODE = 'true'
+  it('is true in local development when no Netlify site metadata is present', () => {
     expect(isDemoMode()).toBe(true)
   })
 
-  it('is false when DEMO_MODE=false, even without a database configured', () => {
-    process.env.DEMO_MODE = 'false'
-    delete process.env.NETLIFY_DB_URL
+  it('is true under netlify dev, even when linked to a site', () => {
+    process.env.NETLIFY_DEV = 'true'
+    process.env.SITE_ID = 'user-site-id'
+    process.env.SITE_NAME = 'user-site'
+
+    expect(isDemoMode()).toBe(true)
+  })
+
+  it('is true on the canonical demo project by site ID', () => {
+    process.env.SITE_ID = '480ddca5-1fd1-4784-b8c7-c889474b8cf9'
+    process.env.SITE_NAME = 'renamed-demo-site'
+
+    expect(isDemoMode()).toBe(true)
+  })
+
+  it('is true on the canonical demo project by site name', () => {
+    process.env.SITE_NAME = 'app-pack-template'
+
+    expect(isDemoMode()).toBe(true)
+  })
+
+  it('is false on other deployed Netlify projects', () => {
+    process.env.SITE_ID = 'user-site-id'
+    process.env.SITE_NAME = 'user-site'
+
     expect(isDemoMode()).toBe(false)
   })
 
-  it('defaults to true when DEMO_MODE is unset, regardless of NETLIFY_DB_URL', () => {
-    delete process.env.DEMO_MODE
-    delete process.env.NETLIFY_DB_URL
-    expect(isDemoMode()).toBe(true)
-  })
-
-  it('stays true even when NETLIFY_DB_URL is set (e.g. auto-provisioned by netlify dev), unless DEMO_MODE=false', () => {
-    delete process.env.DEMO_MODE
+  it('does not infer demo mode from NETLIFY_DB_URL', () => {
     process.env.NETLIFY_DB_URL = 'postgres://example'
+
     expect(isDemoMode()).toBe(true)
   })
 })
@@ -54,6 +77,9 @@ describe('isAuthEnabled', () => {
     process.env = { ...original }
     delete process.env.NETLIFY_DEV
     delete process.env.AUTH_DEV_USER
+    delete process.env.SITE_ID
+    delete process.env.NETLIFY_SITE_ID
+    delete process.env.SITE_NAME
     mockGetIdentityConfig.mockReturnValue(null)
   })
 
@@ -63,13 +89,25 @@ describe('isAuthEnabled', () => {
   })
 
   it('is false when Identity is not configured', () => {
+    process.env.SITE_ID = 'user-site-id'
+    process.env.SITE_NAME = 'user-site'
+
     expect(isAuthEnabled()).toBe(false)
   })
 
   it('is true when Netlify Identity config is available', () => {
+    process.env.SITE_ID = 'user-site-id'
+    process.env.SITE_NAME = 'user-site'
     mockGetIdentityConfig.mockReturnValue({ url: 'https://example.netlify.app/.netlify/identity' })
 
     expect(isAuthEnabled()).toBe(true)
+  })
+
+  it('is false on the demo project even if Identity config is discoverable', () => {
+    process.env.SITE_NAME = 'app-pack-template'
+    mockGetIdentityConfig.mockReturnValue({ url: 'https://app-pack-template.netlify.app/.netlify/identity' })
+
+    expect(isAuthEnabled()).toBe(false)
   })
 
   it('turns on under netlify dev when a fake auth user is configured', () => {
