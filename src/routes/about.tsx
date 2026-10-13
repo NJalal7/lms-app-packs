@@ -32,8 +32,9 @@ function AboutPage() {
           </Badge>
         </div>
         <p className="max-w-3xl text-muted-foreground">
-          This app includes Netlify Database for saved records and Netlify Identity for sign-in and
-          permissions. Sample data lets you explore the workflow before saving live records.
+          This app saves records in Netlify Database and uses Netlify Identity for sign-in and
+          permissions. Running on your own computer, it uses sample data so you can explore the
+          workflow first.
         </p>
       </div>
 
@@ -43,13 +44,13 @@ function AboutPage() {
           title="Netlify Database"
           description={
             demoMode
-              ? 'Sample data is active right now; live records are stored with Netlify Database.'
-              : 'Live records are stored with Netlify Database.'
+              ? 'Sample data is active right now; deployed copies store records in Netlify Database.'
+              : 'Records are stored in Netlify Database.'
           }
         >
           <p>
-            Sample mode is great for trying things out; records reset between restarts. With live
-            data enabled, records are saved in Netlify Database.
+            Sample data resets whenever the app restarts. Once you deploy your own copy, records are
+            saved in Netlify Database automatically — there's nothing to switch on.
           </p>
         </InfoCard>
 

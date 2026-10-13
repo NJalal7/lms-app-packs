@@ -1,8 +1,5 @@
 import { getIdentityConfig } from '@netlify/identity'
-
-const officialDemoSiteIds = new Set<string>(['480ddca5-1fd1-4784-b8c7-c889474b8cf9'])
-
-const officialDemoSiteNames = new Set(['app-pack-template'])
+import { appConfig } from '@/config/app'
 
 /**
  * Server-only feature flag helpers.
@@ -19,37 +16,72 @@ const officialDemoSiteNames = new Set(['app-pack-template'])
  * via `useAppContext()`.
  */
 
-export function isDemoMode(): boolean {
-  // Demo mode is automatic:
-  //
-  // - Local development stays in demo mode so the template runs with zero
-  //   setup.
-  // - The canonical Netlify demo project stays in demo mode so prospective
-  //   users can explore the app without Identity or a database.
-  // - Every other deployed Netlify project uses the real database path.
-  //
-  // This deliberately does NOT infer demo mode from whether NETLIFY_DB_URL is
-  // set. @netlify/database can auto-provision a local Postgres database (and
-  // set NETLIFY_DB_URL) in dev merely because the package is a dependency,
-  // before you've ever applied a single migration.
-  if (process.env.NETLIFY_DEV === 'true') {
-    return true
-  }
-
-  const siteId = process.env.SITE_ID ?? process.env.NETLIFY_SITE_ID
-  const siteName = process.env.SITE_NAME
-
-  if (!siteId && !siteName) {
-    return true
-  }
-
-  return (
-    (siteId ? officialDemoSiteIds.has(siteId) : false) ||
-    (siteName ? officialDemoSiteNames.has(siteName) : false)
-  )
+/**
+ * True on a real Netlify deploy (production, previews, branch deploys), false
+ * on a laptop — including `netlify dev` when the repo is linked to a site,
+ * which sets `SITE_ID` too.
+ *
+ * Only `SITE_ID` (and `NETLIFY_DEV`) work here. `CONTEXT` and `NETLIFY` are
+ * build-time-only variables and are undefined inside the deployed function.
+ */
+export function isDeployed(): boolean {
+  return !!process.env.SITE_ID && process.env.NETLIFY_DEV !== 'true'
 }
 
-export function isAuthEnabled(): boolean {
+/** True only on the canonical public demo project (`appConfig.officialDemoSiteId`). */
+export function isOfficialDemoSite(): boolean {
+  return process.env.SITE_ID === appConfig.officialDemoSiteId
+}
+
+/**
+ * Whether the app runs on in-memory sample data instead of Netlify Database.
+ * Derived from the environment — there is deliberately NO env var for it, so
+ * a stray `DEMO_MODE=true` can never silently put a deployed fork back on
+ * sample data.
+ *
+ * - Local development, including a linked `netlify dev`, uses sample data, so
+ *   `npm install && npm run dev` stays zero-config and tests stay in-memory.
+ * - The official demo site uses sample data so visitors can explore without
+ *   Identity or a database.
+ * - Every other deploy, previews and branch deploys included, uses Netlify
+ *   Database, which Netlify provisions and migrates on deploy.
+ *
+ * This deliberately does NOT infer anything from NETLIFY_DB_URL.
+ * @netlify/database can auto-provision a local Postgres database (and set
+ * NETLIFY_DB_URL) in dev merely because the package is a dependency, before
+ * you've ever applied a single migration.
+ */
+export function isDemoMode(): boolean {
+  return !isDeployed() || isOfficialDemoSite()
+}
+
+// How long to remember whether Identity is on. Enabling it in the dashboard
+// takes effect within a minute, without a redeploy. Keyed by Identity URL so a
+// cached answer can never leak across sites. Only definitive answers are
+// cached, never errors.
+const IDENTITY_CHECK_TTL_MS = 60_000
+const identityChecks = new Map<string, { enabled: boolean; expires: number }>()
+
+/** Test hook: forget remembered Identity lookups. */
+export function clearAuthEnabledCache(): void {
+  identityChecks.clear()
+}
+
+/**
+ * Whether Netlify Identity is turned on for this project, asked of the
+ * platform itself rather than an env var.
+ *
+ * `getIdentityConfig()` alone can't tell: on the server it returns the site's
+ * Identity URL whenever the code runs on Netlify, enabled or not. So we ask
+ * the Identity settings endpoint. Netlify answers 200 with JSON when Identity
+ * is on and 404 when it's off.
+ *
+ * Fails closed: if the endpoint can't be reached or answers anything else
+ * (5xx, a password-protected deploy's 401, a network error), this returns
+ * `true`, because `requireRole()` and friends no-op when auth is off and a
+ * transient error must never open the app up. Failures aren't cached.
+ */
+export async function isAuthEnabled(): Promise<boolean> {
   if (process.env.NETLIFY_DEV === 'true' && process.env.AUTH_DEV_USER) {
     return true
   }
@@ -58,7 +90,31 @@ export function isAuthEnabled(): boolean {
     return false
   }
 
-  return getIdentityConfig() != null
+  const url = getIdentityConfig()?.url
+  if (!url) {
+    return false
+  }
+
+  const cached = identityChecks.get(url)
+  if (cached && cached.expires > Date.now()) {
+    return cached.enabled
+  }
+
+  try {
+    const response = await fetch(`${url}/settings`, { headers: { accept: 'application/json' } })
+    if (response.status === 404) {
+      identityChecks.set(url, { enabled: false, expires: Date.now() + IDENTITY_CHECK_TTL_MS })
+      return false
+    }
+    if (response.ok) {
+      identityChecks.set(url, { enabled: true, expires: Date.now() + IDENTITY_CHECK_TTL_MS })
+      return true
+    }
+    console.warn(`Identity settings check returned ${response.status}; treating Identity as enabled.`)
+  } catch (error) {
+    console.warn('Identity settings check failed; treating Identity as enabled.', error)
+  }
+  return true
 }
 
 /**

@@ -1,8 +1,8 @@
 # App Pack Starter
 
 A TanStack Start + shadcn/ui application starter that deploys to Netlify in one
-command, runs in **demo mode** locally and on the canonical public demo
-project (in-memory data, no database or auth required), and turns on real
+command, runs on sample data locally and on the canonical public demo
+project (in-memory, no database or auth required), and turns on real
 authentication automatically when Netlify Identity is enabled for a deployed
 project. Built to be forked by HR, Finance, and other internal teams — and by
 AI coding agents working on their behalf.
@@ -14,7 +14,7 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:3000. You're in demo mode: the dashboard, records table,
+Open http://localhost:3000. You're on sample data: the dashboard, records table,
 and forms all work against an in-memory dataset with a built-in demo user.
 Data resets on every cold start. Nothing to configure.
 
@@ -30,14 +30,15 @@ Or click:
 [![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy)
 
 The build (`npm run build`) and publish directory (`dist/client`) are already
-configured in `netlify.toml`. The canonical `app-pack-template` project stays
-in demo mode for public evaluation; your own deployed project uses the real
-Netlify Database path automatically.
+configured in `netlify.toml`. The canonical public demo stays on sample data
+for public evaluation; your own deployed project uses Netlify Database
+automatically.
 
 ## After deploying to your account
 
 Your deployed project is no longer the public demo. It uses live data, and it
-is open to anyone with the URL until you enable Identity.
+is open to anyone with the URL until you enable Identity. The in-app
+[Go live checklist](#go-live-checklist) walks through the steps below.
 
 1. Open the Netlify project overview:
    `https://app.netlify.com/projects/{sitename}`
@@ -45,9 +46,9 @@ is open to anyone with the URL until you enable Identity.
    uses the database automatically; you do not need to set `NETLIFY_DB_URL`
    by hand. If you connect the database after the first deploy, redeploy the
    site so migrations run before you add records.
-3. If this app should be private, enable Identity in the Netlify dashboard,
-   then redeploy. After that, visitors are sent to `/login` until they sign
-   in.
+3. If this app should be private, enable Identity in the Netlify dashboard.
+   The app notices within about a minute, with no redeploy, and visitors are
+   then sent to `/login` until they sign in.
 4. Set `DEFAULT_ROLE` on the environment variables page before enabling
    signups: `https://app.netlify.com/projects/{sitename}/configuration/env`.
    Then sign up yourself at `/login` right away, **before** sharing the URL
@@ -59,6 +60,34 @@ is open to anyone with the URL until you enable Identity.
    `ALLOWED_SIGNUP_DOMAIN` for signup restrictions,
    `PURGE_ENABLED`/`RECORD_RETENTION_DAYS` for permanent deletion of
    soft-deleted records, and notification keys for Slack or email.
+
+## Go live checklist
+
+A small checklist floats in the corner of the app for **admins only**. It is a
+UX nudge, not access control: it links to dashboard pages and exposes no data.
+
+- **Visible only to admins.** Everyone else, and logged-out visitors, sees
+  nothing. With sign-in off, the stand-in demo user counts as an admin, so it
+  also shows in local dev.
+- **Hides itself** once every checkable step is done, and the dismiss button
+  stays dismissed across reloads (stored in `localStorage`). Clear site
+  storage to bring it back.
+- **On the official demo site** the "Make this app yours" badge shows instead.
+
+Steps:
+
+1. **Sign in** — enable Identity in the Netlify dashboard.
+2. **Domain** — decide who can sign up: set `ALLOWED_SIGNUP_DOMAIN` (exact
+   domain, enforced by the signup hook in `netlify/functions/identity.mts`),
+   and/or turn off open signups and invite people from the Identity tab.
+3. **Admin** — sign up first, before sharing the URL; the first signup becomes
+   the admin. This step stays unchecked until real sign-in is on.
+4. **Rebrand** — edit `src/config/app.ts` and swap `public/logo.svg`.
+
+To remove it, delete `src/components/setup-prompt.tsx`,
+`src/components/go-live-checklist.tsx` and
+`src/components/netlify-deploy-badge.tsx`, plus the `<SetupPrompt />` line in
+`src/components/app-shell.tsx`.
 
 ## Base template guarantees
 
@@ -104,10 +133,11 @@ vertical — full detail is in the linked section, this is just orientation.
 
 See `.env.example` for a copy-pasteable starting point.
 
-> **Note on demo mode:** demo mode is automatic. Local development and the
-> canonical `app-pack-template` Netlify project use in-memory sample data; any
-> other deployed Netlify project uses the real database path. The app never
-> infers demo mode from whether `NETLIFY_DB_URL` happens to be set, because
+> **Note on sample data:** there is no env var for it. Local development
+> (including a linked `netlify dev`) and the official demo site use in-memory
+> sample data; every other deploy, previews and branch deploys included, uses
+> Netlify Database. The app never
+> infers this from whether `NETLIFY_DB_URL` happens to be set, because
 > `@netlify/database` may create that value during local development before
 > migrations have been applied.
 
@@ -118,8 +148,11 @@ The app ships with auth **off**. To turn it on:
 1. In the Netlify dashboard, enable Identity for your site (Site
    configuration → Identity → Enable Identity) — see
    [Netlify's Identity setup guide](https://docs.netlify.com/manage/security/secure-access-to-sites/identity/get-started/#enable-identity).
-2. Redeploy the site. The app detects the project's Identity configuration
-   automatically; there is no auth env var to set.
+2. That's it for detection. The app asks Netlify whether Identity is on (the
+   project's Identity settings endpoint answers 404 when it's off) and picks
+   it up within about a minute, no redeploy needed. There is no auth env var
+   to set. If that check can't be completed (an outage, a password-protected
+   deploy), the app assumes Identity is on rather than leave itself open.
 3. Set `DEFAULT_ROLE` (e.g. `member`) as a site environment variable —
    `netlify/functions/identity.mts` assigns it to every new signup's
    `app_metadata.roles`. Signups fail loudly until this is set.
@@ -351,18 +384,19 @@ points:
    `purgeExpiredRecords` and `netlify/functions/purge-deleted-records.mts`
    along with it — a hard-delete-only entity has nothing left to purge.
 
-## Use Netlify Database
+## Database
 
-1. `netlify database init` — provisions a database and scaffolds Drizzle if
-   you haven't already (this repo already has schema + migrations).
-2. Deploy. Netlify applies every migration in
-   `netlify/database/migrations/` before the deploy goes live.
-3. Optionally seed the same data demo mode uses:
-   ```bash
-   npm run db:seed
-   ```
-   This inserts `src/data/demo/seed.ts` via Drizzle (`onConflictDoNothing`,
-   safe to re-run).
+Automatic. Every deploy except the official demo uses Netlify Database;
+Netlify provisions it and applies every migration in
+`netlify/database/migrations/` before the deploy goes live. There is nothing to
+switch on. Locally you stay on sample data.
+
+Optionally seed a deployed database with the same sample data (safe to
+re-run, via `onConflictDoNothing`):
+
+```bash
+npm run db:seed
+```
 
 To change the schema: edit `src/db/schema.ts`, run `npm run db:generate` to
 emit a migration, commit the migration, and deploy.
@@ -454,8 +488,8 @@ npm test
 npm run format
 ```
 
-Tests run with no Netlify site metadata, which keeps the data layer in demo
-mode. They cover the demo data layer, flag parsing, the submission state
+Tests run with `SITE_ID` unset, which keeps the data layer on in-memory
+sample data. They cover the demo data layer, flag parsing, the submission state
 machine, and notify's input validation.
 
 ## Project layout
@@ -466,7 +500,7 @@ for the full picture. The short version:
 
 ```
 src/config/app.ts        # branding — the only file you edit to rebrand
-src/config/flags.ts       # Demo mode / Identity detection — server-only
+src/config/flags.ts       # Sample-data / Identity detection — server-only
 src/db/schema.ts          # Drizzle schema (source of truth for the DB shape)
 src/db/soft-delete.ts      # deletedAt column mixin + shared query filter helpers
 src/data/                 # one file per entity, demo/DB branches inside
