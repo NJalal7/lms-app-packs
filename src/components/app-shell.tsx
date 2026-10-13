@@ -1,94 +1,159 @@
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Link } from '@tanstack/react-router'
-import { ExternalLink } from 'lucide-react'
+import { Menu } from 'lucide-react'
 import { appConfig } from '@/config/app'
 import { useAppContext } from '@/server/context'
 import { ModeToggle } from '@/components/mode-toggle'
 import { LogoutButton } from '@/auth/client'
-import { Badge } from 'app-packs-ui'
+import { Badge, Button } from 'app-packs-ui'
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet'
 import { cn } from '@/lib/utils'
+
+type NavItem = { label: string; to: (typeof appConfig.nav)[keyof typeof appConfig.nav][number]['to'] }
 
 /**
  * App-wide chrome: header, nav, and content container. Reads branding from
  * `src/config/app.ts` only — never hardcode a product name here.
+ *
+ * Desktop shows the nav inline; below `md` it collapses into a slide-out
+ * drawer so long labels never overflow on phones. A skip link lets keyboard
+ * and screen-reader users jump straight to the page content.
  */
 export function AppShell({ children }: { children: ReactNode }) {
   const { authEnabled, demoMode, user } = useAppContext()
+  const [menuOpen, setMenuOpen] = useState(false)
+
+  const roles = user?.roles ?? []
+  // UX only — the real check is `requireRole()` inside each server function.
+  const isManager = !authEnabled || appConfig.learning.managerRoles.some((role) => roles.includes(role))
+  const isAdmin = roles.includes(appConfig.adminRole)
+
+  const groups: Array<{ label: string; items: ReadonlyArray<NavItem> }> = [
+    { label: 'Learn', items: appConfig.nav.primary },
+    ...(isManager ? [{ label: 'Manage', items: appConfig.nav.manager }] : []),
+    ...(isAdmin ? [{ label: 'Admin', items: appConfig.nav.admin }] : []),
+  ]
 
   return (
     <div className="flex min-h-svh flex-col">
-      <header className="border-b">
+      <a
+        href="#main-content"
+        className="sr-only z-[60] rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground focus:not-sr-only focus:fixed focus:top-3 focus:left-3"
+      >
+        Skip to main content
+      </a>
+      <header className="sticky top-0 z-40 border-b bg-background/90 backdrop-blur supports-[backdrop-filter]:bg-background/75">
         <div className="mx-auto flex h-14 max-w-6xl items-center gap-4 px-4 sm:gap-6">
-          <Link to="/" className="flex items-center gap-2 font-semibold">
-            <img src={appConfig.logo.src} alt={appConfig.logo.alt} className="size-6" />
-            <span className="hidden sm:inline">{appConfig.productName}</span>
+          <Link
+            to="/"
+            className="flex items-center gap-2 rounded-md font-semibold focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+          >
+            <img src={appConfig.logo.src} alt="" className="size-7" />
+            <span>{appConfig.productName}</span>
           </Link>
 
-          <nav className="flex items-center gap-3 text-sm text-muted-foreground sm:gap-4">
-            {appConfig.nav.primary.map((item) => (
-              <Link
-                key={item.to}
-                to={item.to}
-                className="hover:text-foreground [&.active]:font-medium [&.active]:text-foreground"
-                activeProps={{ className: 'active' }}
-              >
-                {item.label}
-              </Link>
-            ))}
-            {user?.roles?.includes(appConfig.adminRole)
-              ? appConfig.nav.admin.map((item) => (
-                  <Link
-                    key={item.to}
-                    to={item.to}
-                    className="hover:text-foreground [&.active]:font-medium [&.active]:text-foreground"
-                    activeProps={{ className: 'active' }}
-                  >
-                    {item.label}
-                  </Link>
-                ))
-              : null}
+          <nav aria-label="Main" className="hidden items-center gap-1 text-sm md:flex">
+            {groups
+              .flatMap((group) => group.items)
+              .map((item) => (
+                <NavLink key={item.to} item={item} />
+              ))}
           </nav>
 
-          <div className="ml-auto flex items-center gap-3">
+          <div className="ml-auto flex items-center gap-2">
             {demoMode ? (
-              <Badge variant="secondary" className="hidden sm:inline-flex">
+              <Badge variant="secondary" className="hidden lg:inline-flex">
                 Sample data
               </Badge>
             ) : null}
             <ModeToggle />
             {user ? (
-              <div className="flex items-center gap-2">
-                <span className="hidden text-sm text-muted-foreground sm:inline">{user.email}</span>
+              <div className="hidden items-center gap-2 md:flex">
+                <span className="hidden text-sm text-muted-foreground lg:inline">{user.email}</span>
                 {authEnabled ? <LogoutButton /> : null}
               </div>
             ) : authEnabled ? (
-              <Link to="/login" className="text-sm font-medium hover:underline">
+              <Link to="/login" className="hidden text-sm font-medium hover:underline md:inline">
                 Log in
               </Link>
             ) : null}
+
+            <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="md:hidden" aria-label="Open menu">
+                  <Menu className="size-5" aria-hidden="true" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-72">
+                <SheetHeader>
+                  <SheetTitle>{appConfig.productName}</SheetTitle>
+                  {user?.email ? <SheetDescription>{user.email}</SheetDescription> : null}
+                </SheetHeader>
+                <nav aria-label="Main" className="flex flex-col gap-5 px-4">
+                  {groups.map((group) => (
+                    <div key={group.label} className="space-y-1">
+                      <p className="px-3 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                        {group.label}
+                      </p>
+                      {group.items.map((item) => (
+                        <NavLink key={item.to} item={item} onNavigate={() => setMenuOpen(false)} block />
+                      ))}
+                    </div>
+                  ))}
+                </nav>
+                <div className="mt-auto border-t p-4">
+                  {user && authEnabled ? (
+                    <LogoutButton />
+                  ) : !user && authEnabled ? (
+                    <Link
+                      to="/login"
+                      className="text-sm font-medium hover:underline"
+                      onClick={() => setMenuOpen(false)}
+                    >
+                      Log in
+                    </Link>
+                  ) : demoMode ? (
+                    <Badge variant="secondary">Sample data</Badge>
+                  ) : null}
+                </div>
+              </SheetContent>
+            </Sheet>
           </div>
         </div>
       </header>
 
-      <main className={cn('mx-auto w-full max-w-6xl flex-1 px-4 py-8 pb-24')}>{children}</main>
-      <NetlifyDeployCard href="https://app.netlify.com/drop" />
+      <main
+        id="main-content"
+        tabIndex={-1}
+        className={cn('mx-auto w-full max-w-6xl flex-1 px-4 py-6 pb-28 outline-none sm:py-8')}
+      >
+        {children}
+      </main>
     </div>
   )
 }
 
-function NetlifyDeployCard({ href }: { href: string }) {
+function NavLink({ item, onNavigate, block }: { item: NavItem; onNavigate?: () => void; block?: boolean }) {
   return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noreferrer"
-      className="fixed right-4 bottom-4 z-50 inline-flex min-h-11 max-w-[calc(100vw-2rem)] items-center gap-3 rounded-full border border-[#24434b] bg-[#0b2930] px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-black/15 transition hover:-translate-y-0.5 hover:bg-[#103740] focus-visible:ring-2 focus-visible:ring-[#32e6e2] focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
-      style={{ fontFamily: "'Figtree', sans-serif" }}
-      aria-label="Make this app yours on Netlify"
+    <Link
+      to={item.to}
+      onClick={onNavigate}
+      activeOptions={{ exact: item.to === '/' }}
+      className={cn(
+        'rounded-md px-3 py-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
+        '[&.active]:bg-primary/10 [&.active]:font-medium [&.active]:text-primary',
+        block && 'block text-base',
+      )}
+      activeProps={{ className: 'active', 'aria-current': 'page' }}
     >
-      <img src="/netlify-monogram-darkmode.svg" alt="" className="size-4 shrink-0" />
-      <span className="whitespace-nowrap">Make this app yours</span>
-      <ExternalLink className="size-4 shrink-0 text-[#32e6e2]" aria-hidden="true" />
-    </a>
+      {item.label}
+    </Link>
   )
 }

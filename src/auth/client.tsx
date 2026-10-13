@@ -1,3 +1,4 @@
+import { appConfig } from '@/config/app'
 import { useEffect, useState } from 'react'
 import { useSearch } from '@tanstack/react-router'
 import {
@@ -89,9 +90,8 @@ function IdentityUnavailableAlert() {
     <Alert variant="destructive">
       <AlertTitle>Identity isn't enabled for this site yet</AlertTitle>
       <AlertDescription>
-        Netlify Identity itself is off - no one can log in, sign up, or reset
-        a password until it's turned on. In the Netlify dashboard: Site
-        configuration - Identity - Enable Identity. See{' '}
+        Netlify Identity itself is off - no one can log in, sign up, or reset a password until it's turned on.
+        In the Netlify dashboard: Site configuration - Identity - Enable Identity. See{' '}
         <a
           href="https://docs.netlify.com/manage/security/secure-access-to-sites/identity/get-started/#enable-identity"
           target="_blank"
@@ -183,11 +183,7 @@ export function LoginForm() {
             <p>
               Check <strong>{email}</strong> for a link to reset your password.
             </p>
-            <button
-              type="button"
-              className="underline underline-offset-4"
-              onClick={() => setMode('login')}
-            >
+            <button type="button" className="underline underline-offset-4" onClick={() => setMode('login')}>
               Back to log in
             </button>
           </div>
@@ -219,11 +215,7 @@ export function LoginForm() {
             </Button>
 
             <p className="text-center text-sm text-muted-foreground">
-              <button
-                type="button"
-                className="underline underline-offset-4"
-                onClick={() => setMode('login')}
-              >
+              <button type="button" className="underline underline-offset-4" onClick={() => setMode('login')}>
                 Back to log in
               </button>
             </p>
@@ -236,7 +228,11 @@ export function LoginForm() {
   return (
     <div className="mx-auto w-full max-w-sm space-y-6">
       <div className="space-y-1 text-center">
-        <h1 className="text-xl font-semibold">{mode === 'login' ? 'Log in' : 'Create an account'}</h1>
+        <img src={appConfig.logo.src} alt="" className="mx-auto mb-3 size-10" />
+        <h1 className="text-xl font-semibold">
+          {mode === 'login' ? `Log in to ${appConfig.productName}` : `Join ${appConfig.productName}`}
+        </h1>
+        <p className="text-sm text-muted-foreground">{appConfig.tagline}</p>
         <p className="text-sm text-muted-foreground">
           {mode === 'login' ? "Don't have an account?" : 'Already have an account?'}{' '}
           <button

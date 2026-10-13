@@ -18,6 +18,32 @@ Open http://localhost:3000. You're in demo mode: the dashboard, records table,
 and forms all work against an in-memory dataset with a built-in demo user.
 Data resets on every cold start. Nothing to configure.
 
+## Acme Academy (the LMS built on this starter)
+
+This fork is Acme Academy, a lightweight learning portal for every Acme employee.
+
+- **Learners** (`/`, `/courses`, `/courses/:id`) see their overall progress,
+  browse published courses by topic, and work through each course as a
+  checklist of lessons — each with an estimated time, a priority, a
+  required/optional flag, and an optional link to the source material.
+  Ticking a lesson saves progress immediately.
+- **Course managers** (`/manage/courses`, `/manage/progress`) create and edit
+  courses and lessons, keep courses in draft until they're ready, and see a
+  team progress report. Who counts as a manager is
+  `appConfig.learning.managerRoles` in `src/config/app.ts` (defaults to
+  `['admin', 'hr_admin']`), enforced server-side with `requireRole()`.
+- **Data**: `courses`, `lessons` (both soft-deletable), and `lesson_progress`
+  (one row per learner + lesson; unchecking clears `completedAt` rather than
+  deleting). Code lives in `src/data/courses.ts`, `src/data/progress.ts`, and
+  `src/server/learning.ts`. The starter catalog in
+  `src/data/demo/learning-seed.ts` powers demo mode and is inserted into the
+  real database by the `seed_starter_courses` migration.
+- **Copy** — welcome text, tips, and help contacts — lives in
+  `appConfig.learning`.
+- **Progress is per signed-in user**, so enable Netlify Identity (see "Enable
+  auth" below) before rolling this out. With Identity off, a deployed site
+  records everyone's progress against one shared anonymous learner.
+
 ## One-command deploy
 
 ```bash
