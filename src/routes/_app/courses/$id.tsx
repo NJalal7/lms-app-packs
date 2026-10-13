@@ -117,7 +117,7 @@ function CourseChecklist({
 
       {/* Course header */}
       <section aria-labelledby="course-title" className="rounded-2xl border bg-card p-5 shadow-xs sm:p-7">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+        <div className="flex flex-col gap-4 md:flex-row md:items-start">
           <CourseIcon icon={course.icon} className="size-12" />
           <div className="min-w-0 flex-1 space-y-1">
             <p className="text-xs font-medium tracking-wide text-primary uppercase">{course.category}</p>
@@ -190,7 +190,7 @@ function CourseChecklist({
 
       {/* Lessons */}
       <section aria-labelledby="lessons-heading" className="space-y-4">
-        <div className="flex flex-wrap items-end justify-between gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h2 id="lessons-heading" className="text-xl font-semibold tracking-tight">
               Lessons
@@ -248,7 +248,11 @@ function FilterTabs({
     ['done', 'Done'],
   ]
   return (
-    <div role="group" aria-label="Show lessons" className="inline-flex rounded-lg border bg-muted/50 p-1">
+    <div
+      role="group"
+      aria-label="Show lessons"
+      className="flex w-full rounded-lg border bg-muted/50 p-1 sm:inline-flex sm:w-auto"
+    >
       {options.map(([key, label]) => (
         <button
           key={key}
@@ -256,7 +260,7 @@ function FilterTabs({
           aria-pressed={value === key}
           onClick={() => onChange(key)}
           className={cn(
-            'rounded-md px-3 py-1.5 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
+            'min-h-9 flex-1 rounded-md px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors sm:flex-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
             value === key
               ? 'bg-background text-foreground shadow-xs'
               : 'text-muted-foreground hover:text-foreground',
@@ -293,7 +297,7 @@ function LessonItem({
       )}
     >
       <div className="flex gap-3 sm:gap-4">
-        <div className="pt-0.5">
+        <label htmlFor={checkboxId} className="-m-3 flex cursor-pointer items-start p-3 pt-3.5">
           <Checkbox
             id={checkboxId}
             checked={checked}
@@ -301,7 +305,7 @@ function LessonItem({
             aria-describedby={lesson.description ? descId : undefined}
             onChange={(e) => onToggle(e.currentTarget.checked)}
           />
-        </div>
+        </label>
         <div className="min-w-0 flex-1 space-y-2">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
             <label htmlFor={checkboxId} className="cursor-pointer text-base leading-snug font-medium">

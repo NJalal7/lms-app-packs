@@ -50,7 +50,7 @@ function ManageCoursesPage() {
           {courses.map((course) => (
             <li
               key={course.id}
-              className="relative flex items-center gap-4 p-4 hover:bg-muted/50 focus-within:bg-muted/50"
+              className="relative flex items-center gap-3 p-4 hover:bg-muted/50 sm:gap-4 focus-within:bg-muted/50"
             >
               <CourseIcon icon={course.icon} className="hidden sm:inline-flex" />
               <div className="min-w-0 flex-1">

@@ -202,7 +202,7 @@ function HelpPanel() {
           aria-hidden="true"
         />
       </summary>
-      <ul className="grid gap-3 px-5 pb-5 sm:grid-cols-3">
+      <ul className="grid gap-3 px-5 pb-5 md:grid-cols-3">
         {appConfig.learning.helpContacts.map((c) => (
           <li key={c.topic} className="rounded-xl border bg-background p-4">
             <p className="text-sm font-medium">{c.topic}</p>

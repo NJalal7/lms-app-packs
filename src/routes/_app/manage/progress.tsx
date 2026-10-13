@@ -70,7 +70,35 @@ function TeamProgressPage() {
               <CardDescription>Sorted by lessons completed.</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="-mx-6 overflow-x-auto px-6">
+              {/* Phones: stacked list — avoids sideways scrolling through a wide table. */}
+              <ul className="divide-y sm:hidden" aria-label="Lesson completion by employee">
+                {learners.map((l) => (
+                  <li key={l.userId} className="space-y-2 py-3 first:pt-0 last:pb-0">
+                    <div className="flex items-baseline justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="truncate font-medium">{l.name}</p>
+                        {l.email && l.email !== l.name ? (
+                          <p className="truncate text-xs text-muted-foreground">{l.email}</p>
+                        ) : null}
+                      </div>
+                      <span className="shrink-0 text-sm font-medium tabular-nums">
+                        {percent(l.completedCount, totalLessons)}%
+                      </span>
+                    </div>
+                    <ProgressBar
+                      size="small"
+                      value={l.completedCount}
+                      max={totalLessons}
+                      label={`${l.name} overall progress`}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      {l.coursesCompleted}/{courses.length} courses done · Last active{' '}
+                      {dateFormat.format(new Date(l.lastActivity))}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+              <div className="-mx-6 hidden overflow-x-auto px-6 sm:block">
                 <table className="w-full min-w-[34rem] text-sm">
                   <caption className="sr-only">Lesson completion by learner</caption>
                   <thead>

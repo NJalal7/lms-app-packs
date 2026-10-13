@@ -91,7 +91,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                   <Menu className="size-5" aria-hidden="true" />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="right" className="w-72">
+              <SheetContent side="right" className="w-72 overflow-y-auto">
                 <SheetHeader>
                   <SheetTitle>{appConfig.productName}</SheetTitle>
                   {user?.email ? <SheetDescription>{user.email}</SheetDescription> : null}
@@ -132,7 +132,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <main
         id="main-content"
         tabIndex={-1}
-        className={cn('mx-auto w-full max-w-6xl flex-1 px-4 py-6 pb-28 outline-none sm:py-8')}
+        className={cn('mx-auto w-full max-w-6xl flex-1 px-4 py-6 pb-16 outline-none sm:py-8')}
       >
         {children}
       </main>
@@ -149,7 +149,7 @@ function NavLink({ item, onNavigate, block }: { item: NavItem; onNavigate?: () =
       className={cn(
         'rounded-md px-3 py-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
         '[&.active]:bg-primary/10 [&.active]:font-medium [&.active]:text-primary',
-        block && 'block text-base',
+        block && 'block py-2.5 text-base',
       )}
       activeProps={{ className: 'active', 'aria-current': 'page' }}
     >
