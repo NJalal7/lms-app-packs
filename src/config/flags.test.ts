@@ -6,7 +6,6 @@ import {
   isOfficialDemoSite,
   isAuthEnabled,
   clearAuthEnabledCache,
-  getDefaultRole,
   getAllowedSignupDomain,
   isPurgeEnabled,
   getRetentionDays,
@@ -159,27 +158,6 @@ describe('isAuthEnabled', () => {
     process.env.AUTH_DEV_USER = '{"email":"you@example.com","roles":["admin"]}'
 
     expect(await isAuthEnabled()).toBe(true)
-  })
-})
-
-describe('getDefaultRole', () => {
-  afterEach(() => {
-    delete process.env.DEFAULT_ROLE
-  })
-
-  it('throws when DEFAULT_ROLE is unset', () => {
-    delete process.env.DEFAULT_ROLE
-    expect(() => getDefaultRole()).toThrow(/DEFAULT_ROLE is not set/)
-  })
-
-  it('throws when DEFAULT_ROLE is an empty string', () => {
-    process.env.DEFAULT_ROLE = ''
-    expect(() => getDefaultRole()).toThrow(/DEFAULT_ROLE is not set/)
-  })
-
-  it('returns the configured value', () => {
-    process.env.DEFAULT_ROLE = 'member'
-    expect(getDefaultRole()).toBe('member')
   })
 })
 
