@@ -8,6 +8,17 @@
 export const appConfig = {
   productName: 'Acme Academy',
   tagline: 'The learning portal for everyone at Acme.',
+  // Finishes the sentence "This is a starting point for …" on the About page
+  // of the demo site.
+  packDescription:
+    'an employee learning portal: publish short courses, let everyone work through them, and track team progress',
+  // This pack's page in the Netlify template catalog. About links to it, and
+  // each setup checklist row's "Learn more" points at one of its anchors
+  // (`#before-you-share`, `#works-with-<service>`). To confirm: the live slug.
+  templatePageUrl: 'https://www.netlify.com/templates/learning-portal/',
+  // Publishes a fresh copy of this pack through Netlify Drop. The "Make this
+  // app yours" badge on the official demo site links here.
+  dropUrl: 'https://app.netlify.com/drop?example=learning-portal',
   logo: {
     // Path relative to /public. Swap the file and keep the same path, or
     // change the path here.
@@ -31,24 +42,37 @@ export const appConfig = {
     primary: [
       { label: 'My learning', to: '/' as const },
       { label: 'Course catalog', to: '/courses' as const },
-      { label: 'About', to: '/about' as const },
     ],
     // Shown to `learning.managerRoles` (see below).
     manager: [
       { label: 'Manage courses', to: '/manage/courses' as const },
       { label: 'Team progress', to: '/manage/progress' as const },
     ],
+    // Shown in the account menu (under the user's email) for `adminRole` only.
     admin: [
       { label: 'Audit log', to: '/admin/audit' as const },
       { label: 'Usage events', to: '/admin/events' as const },
     ],
   },
-  // The role required to see the built-in demo admin section (audit log,
-  // usage events) and its nav links above. This is the only hardcoded role
+  // The role required to see the built-in demo admin section (audit
+  // log, usage events) and its account-menu links above. This is the only hardcoded role
   // name in the base template — change it to whatever your vertical's
   // taxonomy calls its top role, or remove the admin section entirely. See
   // README > Roles for the generic RBAC mechanism this plugs into.
   adminRole: 'admin',
+  // The role every signup after the first gets in `app_metadata.roles` (see
+  // `netlify/functions/identity.mts`). A fixed name, not an env var: there's
+  // nothing to configure before enabling signups. Promote people beyond it
+  // from the Identity tab. Rename it if your vertical calls its base role
+  // something else.
+  memberRole: 'member',
+  // The Netlify site ID of the canonical public demo. That one deploy runs on
+  // sample data and shows a "Make this app yours" badge (see
+  // `src/components/setup-prompt.tsx`); every other deploy uses the real
+  // database and shows the admin-only setup checklist instead. If your fork
+  // has no hosted demo, delete this, `isOfficialDemoSite()` in
+  // `src/config/flags.ts`, and `netlify-deploy-badge.tsx`.
+  officialDemoSiteId: '480ddca5-1fd1-4784-b8c7-c889474b8cf9',
   // Roles allowed to upload/download files via `/api/upload` and
   // `/api/files/:key` (see `netlify/functions/upload.mts` /
   // `netlify/functions/files.mts`). Defaults to `[]` ("not configured

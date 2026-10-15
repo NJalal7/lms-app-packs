@@ -1,5 +1,6 @@
+import { Pool, neon } from '@neondatabase/serverless'
 import { drizzle } from 'drizzle-orm/netlify-db'
-import { getDatabase } from '@netlify/database'
+import { getDatabaseConnection } from '@/config/flags'
 
 // NOTE: the installed drizzle-orm (1.0.0-rc.4) netlify-db driver's `drizzle()`
 // config type does not accept a `schema` object (that option was removed in
@@ -7,33 +8,31 @@ import { getDatabase } from '@netlify/database'
 // app only uses the plain query builder (`db.select().from(records)`, etc.),
 // so table objects are imported directly from `./schema` wherever needed
 // instead of being registered here.
-//
-// WORKAROUND: drizzle-orm 1.0.0-rc.4's serverless session runs every query
-// as `httpClient(sql, params, options)`. `@neondatabase/serverless` 1.x
-// rejects that call shape ("This function can now be called only as a
-// tagged-template function...") and requires `httpClient.query(...)`
-// instead, so every query on a deployed site failed. We build the
-// connection with `@netlify/database`'s `getDatabase()` (the same client
-// `drizzle()` would create, including connection-string refresh) and wrap
-// its HTTP client so plain-function calls go to `.query()`. Remove this
-// once a drizzle-orm release calls `.query()` itself.
+// `drizzle` is overloaded many times over; `ReturnType<typeof drizzle>`
+// on its own resolves to whichever overload TS happens to pick (not
+// necessarily the zero-arg one we actually call), which then disagrees
+// with the real call below. Routing through this unexported helper pins
+// the cached type to the exact zero-arg call we make.
 function createDb() {
-  const connection = getDatabase()
-  if (connection.driver !== 'serverless') {
-    return drizzle({ client: connection })
+  const { url, useServerDriver } = getDatabaseConnection()
+  if (useServerDriver) {
+    return drizzle({ connection: url })
   }
-  const { httpClient } = connection
-  const compatHttpClient = new Proxy(httpClient, {
-    apply: (_target, _thisArg, args: Parameters<typeof httpClient.query>) => httpClient.query(...args),
-  })
-  return drizzle({
-    client: {
-      driver: 'serverless',
-      httpClient: compatHttpClient,
-      pool: connection.pool,
-      connectionString: connection.connectionString,
-    },
-  })
+
+  // drizzle-orm's netlify-db driver calls the Neon HTTP client as
+  // `http(sqlText, params, options)`. @neondatabase/serverless 1.x (which
+  // @netlify/database pulls in) throws on that form — "This function can now
+  // be called only as a tagged-template function" — so every query fails on a
+  // deployed site. Neon's `.query()` is the conventional-call form, so route
+  // the call there. Drop this wrapper and go back to a bare `drizzle()` once
+  // drizzle-orm's adapter does the same.
+  const http = neon(url)
+  const compatHttp = Object.assign(
+    (text: string, params?: unknown[], options?: Parameters<typeof http.query>[2]) =>
+      http.query(text, params, options),
+    http,
+  )
+  return drizzle({ client: { http: compatHttp, pool: new Pool({ connectionString: url }) } })
 }
 
 let cached: ReturnType<typeof createDb> | undefined
@@ -41,7 +40,7 @@ let cached: ReturnType<typeof createDb> | undefined
 /**
  * Lazily creates (and caches) the Drizzle client on first use.
  *
- * IMPORTANT: `@netlify/database`'s `getDatabase()` throws synchronously if
+ * IMPORTANT: `drizzle-orm/netlify-db`'s `drizzle()` throws synchronously if
  * `NETLIFY_DB_URL` isn't set. Building the client eagerly at module scope
  * would therefore crash the whole app on import in demo mode (no database
  * configured). Every caller lives in the `else` branch of an

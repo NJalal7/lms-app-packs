@@ -42,7 +42,11 @@ function downloadRequest(key: string) {
 
 function mockDeployedSite() {
   process.env.SITE_ID = 'user-site-id'
-  process.env.SITE_NAME = 'user-site'
+  // Identity is on for this site: the settings endpoint answers.
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () => new Response('{}', { status: 200 })),
+  )
 }
 
 describe('files function authorization', () => {
@@ -50,6 +54,7 @@ describe('files function authorization', () => {
 
   afterEach(() => {
     process.env = { ...originalEnv }
+    vi.unstubAllGlobals()
     mockRoles.current = []
     mockGetUser.mockReset()
     mockGetIdentityConfig.mockReset()

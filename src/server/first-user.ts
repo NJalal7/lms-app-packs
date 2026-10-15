@@ -13,7 +13,7 @@ import { hasAnyUsers } from '@/auth/first-user'
  * promoted.
  */
 export const needsFirstAdminServer = createServerFn({ method: 'GET' }).handler(async (): Promise<boolean> => {
-  if (!isAuthEnabled() || isDemoMode()) return false
+  if (isDemoMode() || !(await isAuthEnabled())) return false
 
   try {
     return !(await hasAnyUsers())

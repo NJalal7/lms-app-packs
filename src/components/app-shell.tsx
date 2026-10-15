@@ -4,7 +4,8 @@ import { Menu } from 'lucide-react'
 import { appConfig } from '@/config/app'
 import { useAppContext } from '@/server/context'
 import { ModeToggle } from '@/components/mode-toggle'
-import { LogoutButton } from '@/auth/client'
+import { SetupPrompt } from '@/components/setup-prompt'
+import { UserMenu } from '@/components/user-menu'
 import { Badge, Button } from 'app-packs-ui'
 import {
   Sheet,
@@ -16,7 +17,10 @@ import {
 } from '@/components/ui/sheet'
 import { cn } from '@/lib/utils'
 
-type NavItem = { label: string; to: (typeof appConfig.nav)[keyof typeof appConfig.nav][number]['to'] }
+type NavItem = {
+  label: string
+  to: (typeof appConfig.nav)[keyof typeof appConfig.nav][number]['to'] | '/about'
+}
 
 /**
  * App-wide chrome: header, nav, and content container. Reads branding from
@@ -33,12 +37,13 @@ export function AppShell({ children }: { children: ReactNode }) {
   const roles = user?.roles ?? []
   // UX only — the real check is `requireRole()` inside each server function.
   const isManager = !authEnabled || appConfig.learning.managerRoles.some((role) => roles.includes(role))
-  const isAdmin = roles.includes(appConfig.adminRole)
+  // The demo site shows About to everyone; a deployed copy only to its admins.
+  const showAbout = demoMode || roles.includes(appConfig.adminRole)
 
+  // Admin pages live in the account menu (`UserMenu`), not here.
   const groups: Array<{ label: string; items: ReadonlyArray<NavItem> }> = [
     { label: 'Learn', items: appConfig.nav.primary },
     ...(isManager ? [{ label: 'Manage', items: appConfig.nav.manager }] : []),
-    ...(isAdmin ? [{ label: 'Admin', items: appConfig.nav.admin }] : []),
   ]
 
   return (
@@ -73,12 +78,14 @@ export function AppShell({ children }: { children: ReactNode }) {
                 Sample data
               </Badge>
             ) : null}
+            {showAbout ? (
+              <Button asChild variant="outline" size="small" className="hidden md:inline-flex">
+                <Link to="/about">About this app</Link>
+              </Button>
+            ) : null}
             <ModeToggle />
             {user ? (
-              <div className="hidden items-center gap-2 md:flex">
-                <span className="hidden text-sm text-muted-foreground lg:inline">{user.email}</span>
-                {authEnabled ? <LogoutButton /> : null}
-              </div>
+              <UserMenu />
             ) : authEnabled ? (
               <Link to="/login" className="hidden text-sm font-medium hover:underline md:inline">
                 Log in
@@ -107,11 +114,18 @@ export function AppShell({ children }: { children: ReactNode }) {
                       ))}
                     </div>
                   ))}
+                  {showAbout ? (
+                    <div className="space-y-1">
+                      <NavLink
+                        item={{ label: 'About this app', to: '/about' }}
+                        onNavigate={() => setMenuOpen(false)}
+                        block
+                      />
+                    </div>
+                  ) : null}
                 </nav>
                 <div className="mt-auto border-t p-4">
-                  {user && authEnabled ? (
-                    <LogoutButton />
-                  ) : !user && authEnabled ? (
+                  {!user && authEnabled ? (
                     <Link
                       to="/login"
                       className="text-sm font-medium hover:underline"
@@ -136,6 +150,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       >
         {children}
       </main>
+      <SetupPrompt />
     </div>
   )
 }

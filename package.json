@@ -15,6 +15,7 @@
     "db:seed": "netlify dev:exec tsx scripts/seed.ts"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^1.2.0",
     "@netlify/blobs": "^11.0.3",
     "@netlify/database": "^2.0.1",
     "@netlify/functions": "^6.0.0",
