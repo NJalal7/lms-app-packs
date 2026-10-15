@@ -26,7 +26,7 @@ type NavItem = {
  * App-wide chrome: header, nav, and content container. Reads branding from
  * `src/config/app.ts` only — never hardcode a product name here.
  *
- * Desktop shows the nav inline; below `md` it collapses into a slide-out
+ * Desktop shows the nav inline; below `lg` it collapses into a slide-out
  * drawer so long labels never overflow on phones. A skip link lets keyboard
  * and screen-reader users jump straight to the page content.
  */
@@ -61,10 +61,10 @@ export function AppShell({ children }: { children: ReactNode }) {
             className="flex items-center gap-2 rounded-md font-semibold focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
           >
             <img src={appConfig.logo.src} alt="" className="size-7" />
-            <span>{appConfig.productName}</span>
+            <span className="whitespace-nowrap">{appConfig.productName}</span>
           </Link>
 
-          <nav aria-label="Main" className="hidden items-center gap-1 text-sm md:flex">
+          <nav aria-label="Main" className="hidden items-center gap-1 text-sm lg:flex">
             {groups
               .flatMap((group) => group.items)
               .map((item) => (
@@ -73,13 +73,8 @@ export function AppShell({ children }: { children: ReactNode }) {
           </nav>
 
           <div className="ml-auto flex items-center gap-2">
-            {demoMode ? (
-              <Badge variant="secondary" className="hidden lg:inline-flex">
-                Sample data
-              </Badge>
-            ) : null}
             {showAbout ? (
-              <Button asChild variant="outline" size="small" className="hidden md:inline-flex">
+              <Button asChild variant="outline" size="small" className="hidden lg:inline-flex">
                 <Link to="/about">About this app</Link>
               </Button>
             ) : null}
@@ -87,14 +82,14 @@ export function AppShell({ children }: { children: ReactNode }) {
             {user ? (
               <UserMenu />
             ) : authEnabled ? (
-              <Link to="/login" className="hidden text-sm font-medium hover:underline md:inline">
+              <Link to="/login" className="hidden text-sm font-medium hover:underline lg:inline">
                 Log in
               </Link>
             ) : null}
 
             <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="md:hidden" aria-label="Open menu">
+                <Button variant="ghost" size="icon" className="lg:hidden" aria-label="Open menu">
                   <Menu className="size-5" aria-hidden="true" />
                 </Button>
               </SheetTrigger>
@@ -162,7 +157,7 @@ function NavLink({ item, onNavigate, block }: { item: NavItem; onNavigate?: () =
       onClick={onNavigate}
       activeOptions={{ exact: item.to === '/' }}
       className={cn(
-        'rounded-md px-3 py-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
+        'rounded-md px-3 py-2 whitespace-nowrap text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
         '[&.active]:bg-primary/10 [&.active]:font-medium [&.active]:text-primary',
         block && 'block py-2.5 text-base',
       )}

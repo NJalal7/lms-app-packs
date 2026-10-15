@@ -39,4 +39,12 @@ describe('getDb', () => {
     expect(query).toHaveBeenCalledTimes(1)
     expect(query.mock.calls[0][0]).toBe('select 1 as one')
   })
+
+  it('uses node-postgres, not the Neon HTTP client, for the server driver', () => {
+    process.env.NETLIFY_DB_DRIVER = 'server'
+    vi.resetModules()
+    return import('./client').then(({ getDb: freshGetDb }) => {
+      expect(freshGetDb().constructor.name).toBe('NodePgDatabase')
+    })
+  })
 })

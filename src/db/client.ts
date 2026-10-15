@@ -16,7 +16,12 @@ import { getDatabaseConnection } from '@/config/flags'
 function createDb() {
   const { url, useServerDriver } = getDatabaseConnection()
   if (useServerDriver) {
-    return drizzle({ connection: url })
+    // Zero-arg `drizzle()` sees NETLIFY_DB_DRIVER=server and uses node-postgres.
+    // `drizzle({ connection: url })` would go through the Neon HTTP client
+    // instead, which can't reach a plain Postgres server (such as the local
+    // `netlify dev` database) and hits the tagged-template error described
+    // below.
+    return drizzle()
   }
 
   // drizzle-orm's netlify-db driver calls the Neon HTTP client as
