@@ -1,6 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
 import { useRouteContext } from '@tanstack/react-router'
-import { isAuthEnabled, isDemoMode } from '@/config/flags'
+import { isAuthEnabled, isDeployed, isDemoMode, isOfficialDemoSite } from '@/config/flags'
 import { appConfig } from '@/config/app'
 import { getSessionUser } from '@/auth/server'
 
@@ -19,7 +19,21 @@ export type AppContextUser = {
 export type AppContext = {
   authEnabled: boolean
   demoMode: boolean
+  deployed: boolean
+  officialDemoSite: boolean
   user: AppContextUser | null
+}
+
+// Stand-in user whenever auth is off — local dev, the demo site, AND a
+// deployed fork that hasn't enabled Identity yet (which is on the real
+// database, so this can't be keyed on demo mode). Cosmetic only: it makes
+// the admin menu and the setup checklist render. `requireRole()` already
+// no-ops when auth is off, so this grants nothing.
+const DEMO_SESSION_USER: AppContextUser = {
+  id: 'demo-user',
+  email: 'demo@example.com',
+  name: 'Demo User',
+  roles: [appConfig.adminRole],
 }
 
 /**
@@ -30,20 +44,20 @@ export type AppContext = {
  * context, which client components read via `useAppContext()`.
  */
 export const getAppContext = createServerFn({ method: 'GET' }).handler(async (): Promise<AppContext> => {
-  const authEnabled = isAuthEnabled()
-  const demoMode = isDemoMode()
+  const authEnabled = await isAuthEnabled()
   const sessionUser = authEnabled ? await getSessionUser() : null
   const user: AppContextUser | null = sessionUser
     ? { id: sessionUser.id, email: sessionUser.email, name: sessionUser.name, roles: sessionUser.roles ?? [] }
-    : demoMode
-      ? {
-          id: 'demo-user',
-          email: 'demo@example.com',
-          name: 'Demo User',
-          roles: [appConfig.adminRole],
-        }
+    : !authEnabled
+      ? DEMO_SESSION_USER
       : null
-  return { authEnabled, demoMode, user }
+  return {
+    authEnabled,
+    demoMode: isDemoMode(),
+    deployed: isDeployed(),
+    officialDemoSite: isOfficialDemoSite(),
+    user,
+  }
 })
 
 /** Reads the app context previously resolved by the root route's `beforeLoad`. */

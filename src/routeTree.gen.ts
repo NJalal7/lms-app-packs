@@ -9,22 +9,23 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as AppIndexRouteImport } from './routes/_app/index'
 import { Route as AppAdminAuditRouteImport } from './routes/_app/admin/audit'
 import { Route as AppAdminEventsRouteImport } from './routes/_app/admin/events'
+import { Route as AppCoursesIndexRouteImport } from './routes/_app/courses/index'
+import { Route as AppCoursesIdRouteImport } from './routes/_app/courses/$id'
+import { Route as AppManageProgressRouteImport } from './routes/_app/manage/progress'
 import { Route as AppRecordsIndexRouteImport } from './routes/_app/records/index'
 import { Route as AppRecordsIdRouteImport } from './routes/_app/records/$id'
 import { Route as AppRecordsNewRouteImport } from './routes/_app/records/new'
+import { Route as AppManageCoursesIndexRouteImport } from './routes/_app/manage/courses/index'
+import { Route as AppManageCoursesIdRouteImport } from './routes/_app/manage/courses/$id'
+import { Route as AppManageCoursesNewRouteImport } from './routes/_app/manage/courses/new'
 
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AppRoute = AppRouteImport.update({
   id: '/_app',
   getParentRoute: () => rootRouteImport,
@@ -44,6 +45,11 @@ const ResetPasswordRoute = ResetPasswordRouteImport.update({
   path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppIndexRoute = AppIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppAdminAuditRoute = AppAdminAuditRouteImport.update({
   id: '/admin/audit',
   path: '/admin/audit',
@@ -52,6 +58,21 @@ const AppAdminAuditRoute = AppAdminAuditRouteImport.update({
 const AppAdminEventsRoute = AppAdminEventsRouteImport.update({
   id: '/admin/events',
   path: '/admin/events',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppCoursesIndexRoute = AppCoursesIndexRouteImport.update({
+  id: '/courses/',
+  path: '/courses/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppCoursesIdRoute = AppCoursesIdRouteImport.update({
+  id: '/courses/$id',
+  path: '/courses/$id',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppManageProgressRoute = AppManageProgressRouteImport.update({
+  id: '/manage/progress',
+  path: '/manage/progress',
   getParentRoute: () => AppRoute,
 } as any)
 const AppRecordsIndexRoute = AppRecordsIndexRouteImport.update({
@@ -69,41 +90,74 @@ const AppRecordsNewRoute = AppRecordsNewRouteImport.update({
   path: '/records/new',
   getParentRoute: () => AppRoute,
 } as any)
+const AppManageCoursesIndexRoute = AppManageCoursesIndexRouteImport.update({
+  id: '/manage/courses/',
+  path: '/manage/courses/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppManageCoursesIdRoute = AppManageCoursesIdRouteImport.update({
+  id: '/manage/courses/$id',
+  path: '/manage/courses/$id',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppManageCoursesNewRoute = AppManageCoursesNewRouteImport.update({
+  id: '/manage/courses/new',
+  path: '/manage/courses/new',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
+  '/': typeof AppIndexRoute
   '/about': typeof AboutRoute
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
   '/admin/audit': typeof AppAdminAuditRoute
   '/admin/events': typeof AppAdminEventsRoute
+  '/courses/$id': typeof AppCoursesIdRoute
+  '/manage/progress': typeof AppManageProgressRoute
   '/records/$id': typeof AppRecordsIdRoute
   '/records/new': typeof AppRecordsNewRoute
+  '/courses/': typeof AppCoursesIndexRoute
   '/records/': typeof AppRecordsIndexRoute
+  '/manage/courses/$id': typeof AppManageCoursesIdRoute
+  '/manage/courses/new': typeof AppManageCoursesNewRoute
+  '/manage/courses/': typeof AppManageCoursesIndexRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/': typeof AppIndexRoute
   '/admin/audit': typeof AppAdminAuditRoute
   '/admin/events': typeof AppAdminEventsRoute
+  '/courses/$id': typeof AppCoursesIdRoute
+  '/manage/progress': typeof AppManageProgressRoute
   '/records/$id': typeof AppRecordsIdRoute
   '/records/new': typeof AppRecordsNewRoute
+  '/courses': typeof AppCoursesIndexRoute
   '/records': typeof AppRecordsIndexRoute
+  '/manage/courses/$id': typeof AppManageCoursesIdRoute
+  '/manage/courses/new': typeof AppManageCoursesNewRoute
+  '/manage/courses': typeof AppManageCoursesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
   '/_app': typeof AppRouteWithChildren
   '/about': typeof AboutRoute
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/_app/': typeof AppIndexRoute
   '/_app/admin/audit': typeof AppAdminAuditRoute
   '/_app/admin/events': typeof AppAdminEventsRoute
+  '/_app/courses/$id': typeof AppCoursesIdRoute
+  '/_app/manage/progress': typeof AppManageProgressRoute
   '/_app/records/$id': typeof AppRecordsIdRoute
   '/_app/records/new': typeof AppRecordsNewRoute
+  '/_app/courses/': typeof AppCoursesIndexRoute
   '/_app/records/': typeof AppRecordsIndexRoute
+  '/_app/manage/courses/$id': typeof AppManageCoursesIdRoute
+  '/_app/manage/courses/new': typeof AppManageCoursesNewRoute
+  '/_app/manage/courses/': typeof AppManageCoursesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -114,36 +168,53 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/admin/audit'
     | '/admin/events'
+    | '/courses/$id'
+    | '/manage/progress'
     | '/records/$id'
     | '/records/new'
+    | '/courses/'
     | '/records/'
+    | '/manage/courses/$id'
+    | '/manage/courses/new'
+    | '/manage/courses/'
   fileRoutesByTo: FileRoutesByTo
   to:
-    | '/'
     | '/about'
     | '/login'
     | '/reset-password'
+    | '/'
     | '/admin/audit'
     | '/admin/events'
+    | '/courses/$id'
+    | '/manage/progress'
     | '/records/$id'
     | '/records/new'
+    | '/courses'
     | '/records'
+    | '/manage/courses/$id'
+    | '/manage/courses/new'
+    | '/manage/courses'
   id:
     | '__root__'
-    | '/'
     | '/_app'
     | '/about'
     | '/login'
     | '/reset-password'
+    | '/_app/'
     | '/_app/admin/audit'
     | '/_app/admin/events'
+    | '/_app/courses/$id'
+    | '/_app/manage/progress'
     | '/_app/records/$id'
     | '/_app/records/new'
+    | '/_app/courses/'
     | '/_app/records/'
+    | '/_app/manage/courses/$id'
+    | '/_app/manage/courses/new'
+    | '/_app/manage/courses/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
   AppRoute: typeof AppRouteWithChildren
   AboutRoute: typeof AboutRoute
   LoginRoute: typeof LoginRoute
@@ -152,13 +223,6 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/_app': {
       id: '/_app'
       path: ''
@@ -187,6 +251,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_app/': {
+      id: '/_app/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof AppIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/admin/audit': {
       id: '/_app/admin/audit'
       path: '/admin/audit'
@@ -199,6 +270,27 @@ declare module '@tanstack/react-router' {
       path: '/admin/events'
       fullPath: '/admin/events'
       preLoaderRoute: typeof AppAdminEventsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/courses/': {
+      id: '/_app/courses/'
+      path: '/courses'
+      fullPath: '/courses/'
+      preLoaderRoute: typeof AppCoursesIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/courses/$id': {
+      id: '/_app/courses/$id'
+      path: '/courses/$id'
+      fullPath: '/courses/$id'
+      preLoaderRoute: typeof AppCoursesIdRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/manage/progress': {
+      id: '/_app/manage/progress'
+      path: '/manage/progress'
+      fullPath: '/manage/progress'
+      preLoaderRoute: typeof AppManageProgressRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/records/': {
@@ -222,29 +314,63 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppRecordsNewRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/manage/courses/': {
+      id: '/_app/manage/courses/'
+      path: '/manage/courses'
+      fullPath: '/manage/courses/'
+      preLoaderRoute: typeof AppManageCoursesIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/manage/courses/$id': {
+      id: '/_app/manage/courses/$id'
+      path: '/manage/courses/$id'
+      fullPath: '/manage/courses/$id'
+      preLoaderRoute: typeof AppManageCoursesIdRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/manage/courses/new': {
+      id: '/_app/manage/courses/new'
+      path: '/manage/courses/new'
+      fullPath: '/manage/courses/new'
+      preLoaderRoute: typeof AppManageCoursesNewRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
 interface AppRouteChildren {
+  AppIndexRoute: typeof AppIndexRoute
   AppAdminAuditRoute: typeof AppAdminAuditRoute
   AppAdminEventsRoute: typeof AppAdminEventsRoute
+  AppCoursesIdRoute: typeof AppCoursesIdRoute
+  AppManageProgressRoute: typeof AppManageProgressRoute
   AppRecordsIdRoute: typeof AppRecordsIdRoute
   AppRecordsNewRoute: typeof AppRecordsNewRoute
+  AppCoursesIndexRoute: typeof AppCoursesIndexRoute
   AppRecordsIndexRoute: typeof AppRecordsIndexRoute
+  AppManageCoursesIdRoute: typeof AppManageCoursesIdRoute
+  AppManageCoursesNewRoute: typeof AppManageCoursesNewRoute
+  AppManageCoursesIndexRoute: typeof AppManageCoursesIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppIndexRoute: AppIndexRoute,
   AppAdminAuditRoute: AppAdminAuditRoute,
   AppAdminEventsRoute: AppAdminEventsRoute,
+  AppCoursesIdRoute: AppCoursesIdRoute,
+  AppManageProgressRoute: AppManageProgressRoute,
   AppRecordsIdRoute: AppRecordsIdRoute,
   AppRecordsNewRoute: AppRecordsNewRoute,
+  AppCoursesIndexRoute: AppCoursesIndexRoute,
   AppRecordsIndexRoute: AppRecordsIndexRoute,
+  AppManageCoursesIdRoute: AppManageCoursesIdRoute,
+  AppManageCoursesNewRoute: AppManageCoursesNewRoute,
+  AppManageCoursesIndexRoute: AppManageCoursesIndexRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
   AppRoute: AppRouteWithChildren,
   AboutRoute: AboutRoute,
   LoginRoute: LoginRoute,

@@ -4,9 +4,10 @@
  * NETLIFY_DB_URL is available). Safe to re-run: uses `onConflictDoNothing`
  * keyed on the fixed seed UUIDs.
  */
-import { drizzle } from 'drizzle-orm/netlify-db'
-import { records } from '../src/db/schema'
+import { getDb } from '../src/db/client'
+import { records, courses, lessons } from '../src/db/schema'
 import { seedRecords } from '../src/data/demo/seed'
+import { seedCourses, seedLessons } from '../src/data/demo/learning-seed'
 
 async function main() {
   if (!process.env.NETLIFY_DB_URL) {
@@ -16,7 +17,7 @@ async function main() {
     process.exit(1)
   }
 
-  const db = drizzle()
+  const db = getDb()
 
   const inserted = await db
     .insert(records)
@@ -25,6 +26,22 @@ async function main() {
     .returning({ id: records.id })
 
   console.log(`Seeded ${inserted.length} of ${seedRecords.length} record(s) (existing rows were skipped).`)
+
+  // The starter catalog is also inserted by the `seed_starter_courses`
+  // migration; this keeps `npm run db:seed` a complete, idempotent reseed.
+  const insertedCourses = await db
+    .insert(courses)
+    .values(seedCourses)
+    .onConflictDoNothing({ target: courses.id })
+    .returning({ id: courses.id })
+  const insertedLessons = await db
+    .insert(lessons)
+    .values(seedLessons)
+    .onConflictDoNothing({ target: lessons.id })
+    .returning({ id: lessons.id })
+  console.log(
+    `Seeded ${insertedCourses.length} of ${seedCourses.length} course(s) and ${insertedLessons.length} of ${seedLessons.length} lesson(s).`,
+  )
 }
 
 main()

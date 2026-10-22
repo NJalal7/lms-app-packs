@@ -1,4 +1,16 @@
-import { pgTable, uuid, text, numeric, date, timestamp, jsonb, index } from 'drizzle-orm/pg-core'
+import {
+  pgTable,
+  uuid,
+  text,
+  numeric,
+  date,
+  timestamp,
+  jsonb,
+  index,
+  integer,
+  boolean,
+  uniqueIndex,
+} from 'drizzle-orm/pg-core'
 import { softDeleteColumns } from '@/db/soft-delete'
 
 /**
@@ -74,3 +86,90 @@ export const auditLog = pgTable('audit_log', {
 
 export type AuditLogEntry = typeof auditLog.$inferSelect
 export type NewAuditLogEntry = typeof auditLog.$inferInsert
+
+// ---------------------------------------------------------------------------
+// Learning (LMS) entities
+// ---------------------------------------------------------------------------
+
+/**
+ * A course is an ordered collection of lessons (the "section" in an
+ * onboarding checklist). Only `published` courses are visible to learners;
+ * `draft` courses are visible to course managers only.
+ */
+export const courses = pgTable(
+  'courses',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    title: text('title').notNull(),
+    summary: text('summary').notNull().default(''),
+    description: text('description'),
+    category: text('category').notNull().default('General'),
+    // Key into the course icon map in `src/components/learning/course-icon.tsx`.
+    icon: text('icon').notNull().default('book'),
+    status: text('status').notNull().default('draft'), // draft | published
+    sortOrder: integer('sort_order').notNull().default(0),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+    ...softDeleteColumns,
+  },
+  (table) => [index('courses_deleted_at_idx').on(table.deletedAt)],
+)
+
+export type Course = typeof courses.$inferSelect
+export type NewCourse = typeof courses.$inferInsert
+
+/** A single learning task inside a course — read, watch, or complete something. */
+export const lessons = pgTable(
+  'lessons',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    courseId: uuid('course_id')
+      .notNull()
+      .references(() => courses.id),
+    title: text('title').notNull(),
+    description: text('description'),
+    resourceUrl: text('resource_url'),
+    durationMinutes: integer('duration_minutes').notNull().default(15),
+    priority: text('priority').notNull().default('medium'), // high | medium | low
+    required: boolean('required').notNull().default(true),
+    sortOrder: integer('sort_order').notNull().default(0),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+    ...softDeleteColumns,
+  },
+  (table) => [
+    index('lessons_course_id_idx').on(table.courseId),
+    index('lessons_deleted_at_idx').on(table.deletedAt),
+  ],
+)
+
+export type Lesson = typeof lessons.$inferSelect
+export type NewLesson = typeof lessons.$inferInsert
+
+/**
+ * One row per (learner, lesson). Unchecking a lesson clears `completedAt`
+ * rather than deleting the row, so progress history is never destroyed.
+ * Learner email/name are denormalized from the session so the team progress
+ * report works without calling the Identity admin API.
+ */
+export const lessonProgress = pgTable(
+  'lesson_progress',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: text('user_id').notNull(),
+    userEmail: text('user_email'),
+    userName: text('user_name'),
+    lessonId: uuid('lesson_id')
+      .notNull()
+      .references(() => lessons.id),
+    completedAt: timestamp('completed_at', { withTimezone: true }),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('lesson_progress_user_lesson_idx').on(table.userId, table.lessonId),
+    index('lesson_progress_lesson_id_idx').on(table.lessonId),
+  ],
+)
+
+export type LessonProgress = typeof lessonProgress.$inferSelect
+export type NewLessonProgress = typeof lessonProgress.$inferInsert
