@@ -1,8 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { appConfig } from './app'
 import {
   isDemoMode,
+  isDeployed,
+  isOfficialDemoSite,
   isAuthEnabled,
-  getDefaultRole,
+  clearAuthEnabledCache,
   getAllowedSignupDomain,
   isPurgeEnabled,
   getRetentionDays,
@@ -23,119 +26,147 @@ describe('isDemoMode', () => {
     process.env = { ...original }
     delete process.env.NETLIFY_DEV
     delete process.env.SITE_ID
-    delete process.env.NETLIFY_SITE_ID
-    delete process.env.SITE_NAME
+    delete process.env.DEMO_MODE
+    delete process.env.NETLIFY_DB_URL
   })
 
   afterEach(() => {
     process.env = { ...original }
   })
 
-  it('is true in local development when no Netlify site metadata is present', () => {
+  it('is true in local development', () => {
     expect(isDemoMode()).toBe(true)
+    expect(isDeployed()).toBe(false)
   })
 
   it('is true under netlify dev, even when linked to a site', () => {
     process.env.NETLIFY_DEV = 'true'
     process.env.SITE_ID = 'user-site-id'
-    process.env.SITE_NAME = 'user-site'
 
     expect(isDemoMode()).toBe(true)
+    expect(isDeployed()).toBe(false)
   })
 
-  it('is true on the canonical demo project by site ID', () => {
-    process.env.SITE_ID = '480ddca5-1fd1-4784-b8c7-c889474b8cf9'
-    process.env.SITE_NAME = 'renamed-demo-site'
-
-    expect(isDemoMode()).toBe(true)
-  })
-
-  it('is true on the canonical demo project by site name', () => {
-    process.env.SITE_NAME = 'app-pack-template'
-
-    expect(isDemoMode()).toBe(true)
-  })
-
-  it('is false on other deployed Netlify projects', () => {
+  it('is true under vite dev, where the Netlify plugin loads the linked site SITE_ID', () => {
     process.env.SITE_ID = 'user-site-id'
-    process.env.SITE_NAME = 'user-site'
+    vi.stubEnv('NODE_ENV', 'development')
+
+    expect(isDemoMode()).toBe(true)
+    expect(isDeployed()).toBe(false)
+    vi.unstubAllEnvs()
+  })
+
+  it('is true on the official demo site', () => {
+    process.env.SITE_ID = appConfig.officialDemoSiteId
+
+    expect(isDemoMode()).toBe(true)
+    expect(isDeployed()).toBe(true)
+    expect(isOfficialDemoSite()).toBe(true)
+  })
+
+  it('is false on any other deploy, and ignores a stale DEMO_MODE=true', () => {
+    process.env.SITE_ID = 'user-site-id'
+    process.env.DEMO_MODE = 'true'
 
     expect(isDemoMode()).toBe(false)
+    expect(isDeployed()).toBe(true)
+    expect(isOfficialDemoSite()).toBe(false)
   })
 
   it('does not infer demo mode from NETLIFY_DB_URL', () => {
     process.env.NETLIFY_DB_URL = 'postgres://example'
-
     expect(isDemoMode()).toBe(true)
+
+    process.env.SITE_ID = 'user-site-id'
+    delete process.env.NETLIFY_DB_URL
+    expect(isDemoMode()).toBe(false)
   })
 })
 
 describe('isAuthEnabled', () => {
   const original = { ...process.env }
+  const identityUrl = 'https://example.netlify.app/.netlify/identity'
+  const mockFetch = vi.fn()
 
   beforeEach(() => {
     process.env = { ...original }
     delete process.env.NETLIFY_DEV
     delete process.env.AUTH_DEV_USER
     delete process.env.SITE_ID
-    delete process.env.NETLIFY_SITE_ID
-    delete process.env.SITE_NAME
-    mockGetIdentityConfig.mockReturnValue(null)
+    process.env.SITE_ID = 'user-site-id'
+    clearAuthEnabledCache()
+    mockGetIdentityConfig.mockReturnValue({ url: identityUrl })
+    mockFetch.mockReset()
+    vi.stubGlobal('fetch', mockFetch)
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
   })
 
   afterEach(() => {
     process.env = { ...original }
     mockGetIdentityConfig.mockReset()
+    vi.unstubAllGlobals()
+    vi.restoreAllMocks()
   })
 
-  it('is false when Identity is not configured', () => {
-    process.env.SITE_ID = 'user-site-id'
-    process.env.SITE_NAME = 'user-site'
+  it('is true when the Identity settings endpoint answers', async () => {
+    mockFetch.mockResolvedValue(new Response('{}', { status: 200 }))
 
-    expect(isAuthEnabled()).toBe(false)
+    expect(await isAuthEnabled()).toBe(true)
+    expect(mockFetch).toHaveBeenCalledWith(`${identityUrl}/settings`, expect.anything())
   })
 
-  it('is true when Netlify Identity config is available', () => {
-    process.env.SITE_ID = 'user-site-id'
-    process.env.SITE_NAME = 'user-site'
-    mockGetIdentityConfig.mockReturnValue({ url: 'https://example.netlify.app/.netlify/identity' })
+  it('is false when Identity is off on the platform (settings endpoint 404s), even though the config URL exists', async () => {
+    mockFetch.mockResolvedValue(new Response('Not found', { status: 404 }))
 
-    expect(isAuthEnabled()).toBe(true)
+    expect(await isAuthEnabled()).toBe(false)
   })
 
-  it('is false on the demo project even if Identity config is discoverable', () => {
-    process.env.SITE_NAME = 'app-pack-template'
-    mockGetIdentityConfig.mockReturnValue({ url: 'https://app-pack-template.netlify.app/.netlify/identity' })
+  it('is false when no Identity context is available', async () => {
+    mockGetIdentityConfig.mockReturnValue(null)
 
-    expect(isAuthEnabled()).toBe(false)
+    expect(await isAuthEnabled()).toBe(false)
+    expect(mockFetch).not.toHaveBeenCalled()
   })
 
-  it('turns on under netlify dev when a fake auth user is configured', () => {
+  it('fails closed (true) on server errors and network failures, without caching them', async () => {
+    mockFetch.mockResolvedValueOnce(new Response('', { status: 503 }))
+    expect(await isAuthEnabled()).toBe(true)
+
+    mockFetch.mockRejectedValueOnce(new Error('network down'))
+    expect(await isAuthEnabled()).toBe(true)
+
+    mockFetch.mockResolvedValueOnce(new Response('Not found', { status: 404 }))
+    expect(await isAuthEnabled()).toBe(false)
+  })
+
+  it('caches definitive answers briefly', async () => {
+    mockFetch.mockResolvedValue(new Response('{}', { status: 200 }))
+
+    await isAuthEnabled()
+    await isAuthEnabled()
+
+    expect(mockFetch).toHaveBeenCalledTimes(1)
+  })
+
+  it('is false on the official demo site without asking the platform', async () => {
+    process.env.SITE_ID = appConfig.officialDemoSiteId
+
+    expect(await isAuthEnabled()).toBe(false)
+    expect(mockFetch).not.toHaveBeenCalled()
+  })
+
+  it('is false in local development without asking the platform', async () => {
+    delete process.env.SITE_ID
+
+    expect(await isAuthEnabled()).toBe(false)
+    expect(mockFetch).not.toHaveBeenCalled()
+  })
+
+  it('turns on under netlify dev when a fake auth user is configured', async () => {
     process.env.NETLIFY_DEV = 'true'
     process.env.AUTH_DEV_USER = '{"email":"you@example.com","roles":["admin"]}'
 
-    expect(isAuthEnabled()).toBe(true)
-  })
-})
-
-describe('getDefaultRole', () => {
-  afterEach(() => {
-    delete process.env.DEFAULT_ROLE
-  })
-
-  it('throws when DEFAULT_ROLE is unset', () => {
-    delete process.env.DEFAULT_ROLE
-    expect(() => getDefaultRole()).toThrow(/DEFAULT_ROLE is not set/)
-  })
-
-  it('throws when DEFAULT_ROLE is an empty string', () => {
-    process.env.DEFAULT_ROLE = ''
-    expect(() => getDefaultRole()).toThrow(/DEFAULT_ROLE is not set/)
-  })
-
-  it('returns the configured value', () => {
-    process.env.DEFAULT_ROLE = 'member'
-    expect(getDefaultRole()).toBe('member')
+    expect(await isAuthEnabled()).toBe(true)
   })
 })
 

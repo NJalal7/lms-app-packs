@@ -7,19 +7,30 @@ apps. Read this before making changes.
   `npm install && npm run dev` — no database, no auth, no env vars needed.
   Data lives in memory (`src/data/*.ts`) and resets on cold start. Deployed
   forks switch to the real database path automatically based on Netlify's
-  read-only site metadata (`SITE_ID`/`SITE_NAME`).
-- **One flag controls each non-demo toggle**: `DEFAULT_ROLE` (role assigned
-  at signup, required once signups are enabled), `ALLOWED_SIGNUP_DOMAIN`
-  (optional — restricts signups to one exact email domain, no subdomains),
+  read-only `SITE_ID`.
+- **Demo mode is derived, never configured.** `isDemoMode()` is
+  `!isDeployed() || isOfficialDemoSite()` (`src/config/flags.ts`, keyed on
+  Netlify's `SITE_ID` and `appConfig.officialDemoSiteId`). Do not add a
+  `DEMO_MODE` env var or infer it from `NETLIFY_DB_URL`. Tests rely on
+  `SITE_ID` being unset to stay in-memory.
+- **One flag controls each non-demo toggle**: `ALLOWED_SIGNUP_DOMAIN`
+  (optional — restricts signups to one exact email domain, no subdomains)
   and `PURGE_ENABLED`/`RECORD_RETENTION_DAYS` (hard purge of soft-deleted
   records — off by default, `RECORD_RETENTION_DAYS` required once
-  `PURGE_ENABLED=true`). Auth is detected from Netlify Identity being enabled
-  for the linked project; local auth uses `AUTH_DEV_USER` under `netlify dev`.
+  `PURGE_ENABLED=true`). Auth is detected by asking the platform whether Identity is on
+  (`isAuthEnabled()` is async — always `await` it); local auth uses `AUTH_DEV_USER` under `netlify dev`.
   All env-backed helpers live in `src/config/flags.ts` — read `process.env`
   only inside those functions, never at module scope, never anywhere else.
+- **Setup widget**: `src/components/setup-prompt.tsx` decides what floats in
+  the corner — the deploy badge on the official demo site, the admin-only
+  `GoLiveChecklist` elsewhere, nothing for everyone else. UX only, not access
+  control. Delete the three component files and the `<SetupPrompt />` line in
+  `app-shell.tsx` to remove it.
 - **Branding lives in one file**: `src/config/app.ts`. If you're asked to
   rebrand the app, that's the only file that should change (plus swapping
   `/public/logo.svg`).
+  The same file holds `packDescription` and `templatePageUrl`, which feed the
+  About page and the checklist's "Learn more" links.
 - **Data layer pattern**: `src/data/<entity>.ts` has `if (isDemoMode())`
   branches inline — no interface + two implementations. To add an entity,
   copy `src/data/records.ts`'s shape.

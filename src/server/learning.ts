@@ -112,8 +112,8 @@ function toLearner(user: SessionUser | null): Learner {
 }
 
 /** Mirrors `requireRole`'s semantics without throwing — auth off means everyone can manage. */
-function canManage(user: SessionUser | null): boolean {
-  if (!isAuthEnabled()) return true
+async function canManage(user: SessionUser | null): Promise<boolean> {
+  if (!(await isAuthEnabled())) return true
   const roles = user?.roles ?? []
   return appConfig.learning.managerRoles.some((role) => roles.includes(role))
 }
@@ -163,7 +163,7 @@ export const getCourseDetailServer = createServerFn({ method: 'GET' })
   .validator(idInput)
   .handler(async ({ data }) => {
     const user = await requireUser()
-    const manager = canManage(user)
+    const manager = await canManage(user)
     const course = await getCourse(data.id)
     // Drafts are invisible to learners — same 404 as a missing course.
     if (!course || (course.status !== 'published' && !manager)) throw new Error('404: course not found')
@@ -187,7 +187,7 @@ export const setLessonCompletionServer = createServerFn({ method: 'POST' })
     const user = await requireUser()
     const lesson = await getLesson(data.lessonId)
     const course = lesson ? await getCourse(lesson.courseId) : undefined
-    if (!lesson || !course || (course.status !== 'published' && !canManage(user))) {
+    if (!lesson || !course || (course.status !== 'published' && !(await canManage(user)))) {
       throw new Error('404: lesson not found')
     }
     const row = await setLessonCompletion(toLearner(user), lesson.id, data.completed)
